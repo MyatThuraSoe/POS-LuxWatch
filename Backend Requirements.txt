@@ -1,0 +1,1730 @@
+### USER
+You are a Senior Software Architect, Business Analyst, Database Architect, and Laravel Solution Architect.
+
+I am developing a IT devices Shop POS Web Application.
+
+Tech Stack:
+- Frontend: React.js
+- Backend: Laravel 12 REST API
+- Database: PostgreSQL
+- ORM: Eloquent ORM
+- Authentication: Laravel Sanctum
+- Printing: QZ Tray + Voucher Printers
+- Architecture: Repository-Service Pattern
+- API Resources
+- Form Requests
+- Role-Based Access Control
+
+Business:
+The shop sells both:
+1. Classic Watches
+2. Smart Watches
+
+User Roles:
+1. ADMIN
+2. OWNER
+3. EMPLOYEE (Cashier/Seller)
+
+OWNER and ADMIN may initially have similar permissions but must remain separate roles.
+
+Important:
+Do NOT generate code.
+
+I want complete software documentation only.
+
+Create 12 separate phase documents.
+
+For each phase create a complete specification page containing:
+
+1. Phase Objective
+2. Business Requirements
+3. Functional Requirements
+4. User Stories
+5. Use Cases
+6. Permissions Matrix
+7. Database Tables
+8. Table Columns
+9. Relationships
+10. Validation Rules
+11. Business Rules
+12. API Endpoints
+13. Request Examples
+14. Response Examples
+15. Error Cases
+16. Security Requirements
+17. Acceptance Criteria
+18. Future Extension Considerations
+
+Generate one complete page for each phase below:
+
+Phase 0: Project Foundation
+Phase 1: Authentication & Role Management
+Phase 2: User Management
+Phase 3: Product Catalog Management
+Phase 4: Inventory Management
+Phase 5: Supplier Management
+Phase 6: Purchase Management
+Phase 7: POS Sales Module
+Phase 8: Receipt & Voucher Module
+Phase 9: Customer & Warranty Management
+Phase 10: Reports & Analytics
+Phase 11: Production Hardening & System Administration
+
+Requirements:
+
+The documentation must be detailed enough that another AI can later generate backend code from it.
+
+Include all entities, workflows, validations, permissions, and API designs.
+
+For every phase:
+- Explain what problem it solves.
+- Explain how users interact with it.
+- Explain database design.
+- Explain backend architecture considerations.
+- Explain security concerns.
+
+Do not skip details.
+
+Output format:
+
+# Phase X
+## Overview
+## Business Requirements
+## Functional Requirements
+## User Stories
+## Use Cases
+## Database Design
+## Validation Rules
+## Business Rules
+## API Specification
+## Security Requirements
+## Acceptance Criteria
+## Future Enhancements
+
+Generate the documentation phase by phase starting from Phase 0.
+
+### ASSISTANT
+# Phase 0: Project Foundation
+
+## Overview
+**Phase Objective:** Establish the architectural baseline, development conventions, infrastructure configuration, and core Laravel 12 project structure required to support a scalable, secure, and maintainable POS system.
+**Problem Solved:** Eliminates architectural drift, standardizes API responses, enforces the Repository-Service pattern from day one, and configures PostgreSQL, Sanctum, CORS, and queue/cache drivers for production readiness.
+**User Interaction:** Indirect. Developers and DevOps interact with this phase. End-users experience consistent API behavior, standardized error formats, and reliable system health endpoints.
+**Backend Architecture Considerations:** Implementation of a strict Repository-Service pattern. Base classes for `ApiController`, `BaseService`, `BaseRepository`, `ApiResource`, and `FormRequest`. Centralized exception handling with standardized JSON error envelopes. PostgreSQL connection pooling configuration. Redis setup for caching and queues. Laravel 12 routing conventions with API prefixing and versioning (`/api/v1`).
+
+## Business Requirements
+- Establish a standardized development workflow and code structure.
+- Ensure all API responses follow a consistent envelope format for React frontend consumption.
+- Provide system health and readiness endpoints for monitoring and load balancers.
+- Configure environment-specific settings (local, staging, production) securely.
+
+## Functional Requirements
+- Initialize Laravel 12 project with PostgreSQL driver.
+- Configure Laravel Sanctum for token-based authentication.
+- Implement base API response transformer (success/error envelopes).
+- Setup centralized exception handler mapping HTTP exceptions to JSON.
+- Configure CORS for React frontend origin(s).
+- Setup Redis for cache and queue drivers.
+- Implement base Repository and Service interfaces/classes.
+- Create health check and ping endpoints.
+- Configure logging (daily/stack) and failed job tracking.
+
+## User Stories
+- As a Developer, I want a standardized project structure so that all team members follow the same architectural patterns.
+- As a Frontend Engineer, I want consistent API response formats so that I can build predictable data handlers in React.
+- As a DevOps Engineer, I want health check endpoints so that I can configure uptime monitoring and auto-scaling.
+
+## Use Cases
+- **System Initialization:** DevOps provisions environment, sets `.env`, runs migrations, verifies health endpoint.
+- **API Standardization:** Backend developer extends base controller/service, automatically inheriting response formatting and error handling.
+- **Health Monitoring:** External monitoring service polls `/api/v1/health` and receives DB/Cache/Queue status.
+
+## Permissions Matrix
+| Role     | Access Level                          |
+|----------|---------------------------------------|
+| ADMIN    | Full access to system config endpoints|
+| OWNER    | Read-only access to health/status     |
+| EMPLOYEE | No access                             |
+| Public   | Access to `/ping` and `/health` only  |
+
+## Database Design
+### Tables & Columns
+- `migrations`: Laravel default
+- `failed_jobs`: `id`, `uuid`, `connection`, `queue`, `payload`, `exception`, `failed_at`
+- `jobs`: `id`, `queue`, `payload`, `attempts`, `reserved_at`, `available_at`, `created_at`
+- `cache`: `key`, `value`, `expiration`
+- `audit_logs` (Base): `id`, `user_id`, `action`, `entity_type`, `entity_id`, `old_values` (JSONB), `new_values` (JSONB), `ip_address`, `user_agent`, `created_at`
+
+### Relationships
+- `audit_logs.user_id` → `users.id` (nullable for system events)
+- All future business tables will link to `audit_logs` via polymorphic or explicit foreign keys.
+
+## Validation Rules
+- Global API input validation via base `FormRequest`
+- JSON content-type enforcement
+- Max payload size: 10MB
+- Date formats: ISO 8601 (`YYYY-MM-DDTHH:mm:ssZ`)
+- Currency fields: `numeric|min:0|regex:/^\d+(\.\d{1,2})?$/`
+
+## Business Rules
+- All API responses must follow: `{ "success": boolean, "data": object|array|null, "message": string, "errors": object|null, "meta": object|null }`
+- All timestamps stored in UTC, converted to timezone on frontend.
+- PostgreSQL `JSONB` used for flexible attributes (e.g., product specs, audit trails).
+- Soft deletes enabled on all core business entities.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/ping`
+- `GET /api/v1/health`
+- `GET /api/v1/system/info` (Admin/Owner only)
+
+### Request Examples
+```json
+GET /api/v1/health
+Headers: { "Accept": "application/json" }
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "database": "connected",
+    "cache": "connected",
+    "queue": "connected",
+    "version": "1.0.0"
+  },
+  "message": "System operational",
+  "errors": null,
+  "meta": { "timestamp": "2026-06-02T10:00:00Z" }
+}
+```
+
+### Error Cases
+- `503 Service Unavailable`: DB/Cache/Queue connection failure
+- `405 Method Not Allowed`: Invalid HTTP method
+- `415 Unsupported Media Type`: Non-JSON payload
+- `429 Too Many Requests`: Rate limit exceeded
+
+## Security Requirements
+- Sanctum configured for token authentication (no session/CSRF for API).
+- CORS restricted to approved React frontend domains.
+- Rate limiting: 60 req/min for public, 300 req/min for authenticated.
+- `.env` variables encrypted at rest in deployment pipeline.
+- SQL injection prevention via Eloquent parameterization.
+- Disable debug mode in production; custom error pages return generic messages.
+
+## Acceptance Criteria
+- Laravel 12 project initializes successfully with PostgreSQL.
+- Repository-Service base classes are implemented and documented.
+- Standardized API response envelope is enforced globally.
+- Health endpoint returns accurate subsystem status.
+- CORS, rate limiting, and Sanctum are configured and tested.
+- Audit log table and base logging mechanism are operational.
+
+## Future Enhancements
+- Multi-tenant/branch support architecture preparation.
+- OpenAPI/Swagger auto-generation pipeline.
+- Distributed tracing (OpenTelemetry) integration.
+- Read-replica database routing for heavy reporting queries.
+
+---
+
+# Phase 1: Authentication & Role Management
+
+## Overview
+**Phase Objective:** Implement secure authentication, token lifecycle management, and a granular Role-Based Access Control (RBAC) system separating ADMIN, OWNER, and EMPLOYEE roles.
+**Problem Solved:** Prevents unauthorized access, enforces principle of least privilege, and establishes a scalable permission model that keeps OWNER and ADMIN logically separate despite initial overlap.
+**User Interaction:** Users log in via React frontend, receive Sanctum tokens, and access role-gated routes. Session management handles token refresh and logout.
+**Backend Architecture Considerations:** Laravel Sanctum for token issuance. Custom `Role` and `Permission` models with many-to-many pivots. Middleware: `auth:sanctum`, `role:admin,owner,employee`, `permission:*`. Policy classes for model-level authorization. Token scopes for device-specific access.
+
+## Business Requirements
+- Secure login/logout with token-based authentication.
+- Distinct roles: ADMIN (system config, user management), OWNER (financial oversight, full business control), EMPLOYEE (POS operations, limited data access).
+- Granular permissions assignable to roles.
+- Token expiration and revocation capabilities.
+
+## Functional Requirements
+- Login endpoint returning Sanctum token + user profile + roles/permissions.
+- Logout endpoint revoking current token.
+- Token refresh mechanism.
+- CRUD for roles and permissions (Admin/Owner only).
+- Role assignment to users.
+- Permission caching for fast middleware checks.
+- Failed login tracking and account lockout.
+
+## User Stories
+- As an Employee, I want to log in with my credentials so I can access the POS terminal.
+- As an Owner, I want to assign specific permissions to roles so I can control what staff can do.
+- As an Admin, I want to revoke compromised tokens so I can secure the system.
+
+## Use Cases
+- **User Login:** Submit credentials → Validate → Issue Sanctum token → Return user context + permissions → Cache permissions.
+- **Role Assignment:** Admin selects user → Assigns role → Updates pivot table → Clears permission cache.
+- **Token Revocation:** User logs out or Admin revokes → Token deleted from `personal_access_tokens` → Subsequent requests return 401.
+
+## Permissions Matrix
+| Role     | auth.login | auth.logout | roles.manage | permissions.manage | tokens.revoke |
+|----------|------------|-------------|--------------|--------------------|---------------|
+| ADMIN    | ✓          | ✓           | ✓            | ✓                  | ✓             |
+| OWNER    | ✓          | ✓           | ✓            | ✓                  | ✓             |
+| EMPLOYEE | ✓          | ✓           | ✗            | ✗                  | ✗             |
+
+## Database Design
+### Tables & Columns
+- `users`: (extends in Phase 2)
+- `roles`: `id`, `name` (unique), `guard_name`, `description`, `created_at`, `updated_at`
+- `permissions`: `id`, `name` (unique), `guard_name`, `module`, `description`, `created_at`, `updated_at`
+- `role_user`: `role_id`, `user_id`, `assigned_by`, `created_at`
+- `permission_role`: `permission_id`, `role_id`, `created_at`
+- `personal_access_tokens`: (Sanctum default)
+
+### Relationships
+- `User` ↔ `Role` (Many-to-Many via `role_user`)
+- `Role` ↔ `Permission` (Many-to-Many via `permission_role`)
+- `User` → `PersonalAccessToken` (One-to-Many)
+
+## Validation Rules
+- Email: `required|email|max:255|exists:users,email`
+- Password: `required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/`
+- Role/Permission names: `required|string|max:50|alpha_dash|unique`
+- Token name: `required|string|max:100`
+
+## Business Rules
+- OWNER and ADMIN roles are hardcoded seeds but remain editable for permissions.
+- EMPLOYEE cannot modify roles or permissions.
+- Tokens expire after 12 hours of inactivity.
+- 5 failed login attempts within 15 minutes locks account for 30 minutes.
+- Permissions are cached for 60 minutes; cache busts on role/permission changes.
+
+## API Specification
+### Endpoints
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/refresh`
+- `GET /api/v1/roles`
+- `POST /api/v1/roles`
+- `GET /api/v1/permissions`
+- `POST /api/v1/users/{id}/roles`
+
+### Request Examples
+```json
+POST /api/v1/auth/login
+{
+  "email": "cashier@watchshop.com",
+  "password": "SecurePass123!",
+  "device_name": "POS-Terminal-01"
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "token": "3|AbCdEfGhIjKlMnOpQrStUvWxYz",
+    "user": { "id": 5, "name": "John Doe", "email": "cashier@watchshop.com" },
+    "roles": ["EMPLOYEE"],
+    "permissions": ["pos.sales.create", "pos.cart.manage"]
+  },
+  "message": "Authenticated successfully",
+  "errors": null,
+  "meta": { "expires_in": 43200 }
+}
+```
+
+### Error Cases
+- `401 Unauthorized`: Invalid credentials or expired token
+- `403 Forbidden`: Insufficient permissions for role management
+- `423 Locked`: Account temporarily locked due to failed attempts
+- `422 Unprocessable Entity`: Validation failure
+
+## Security Requirements
+- Passwords hashed with `bcrypt` (cost 12) or `argon2id`.
+- Sanctum tokens stored hashed in DB.
+- Brute force protection via login throttling.
+- Role/Permission middleware checks on every protected route.
+- Audit all authentication events and role changes.
+- Prevent privilege escalation via mass assignment protection.
+
+## Acceptance Criteria
+- Users can authenticate and receive valid Sanctum tokens.
+- RBAC middleware correctly restricts routes based on roles/permissions.
+- OWNER and ADMIN roles are distinct and independently configurable.
+- Token refresh and revocation work as specified.
+- Failed login lockout mechanism triggers correctly.
+- Permission caching improves middleware response time.
+
+## Future Enhancements
+- Multi-factor authentication (TOTP/SMS).
+- Device fingerprinting for trusted terminals.
+- SSO/OIDC integration for corporate accounts.
+- Session concurrency limits per user.
+
+---
+
+# Phase 2: User Management
+
+## Overview
+**Phase Objective:** Provide comprehensive CRUD operations for system users, profile management, status control, and audit tracking of user lifecycle events.
+**Problem Solved:** Enables business owners to onboard staff, manage access, deactivate terminated employees, and maintain accurate personnel records without developer intervention.
+**User Interaction:** Admin/Owner accesses user management dashboard to create, edit, disable, or view staff. Employees can update their own profiles and passwords.
+**Backend Architecture Considerations:** `UserService` handles business logic, `UserRepository` handles Eloquent queries. FormRequests for validation. API Resources for transformation. Soft deletes for historical integrity. Avatar storage via Laravel Storage (S3/local).
+
+## Business Requirements
+- Create, update, view, and disable user accounts.
+- Assign roles during creation or editing.
+- Track user status (Active, Inactive, Suspended).
+- Allow users to update personal details and change passwords.
+- Maintain audit trail of all user modifications.
+
+## Functional Requirements
+- Paginated user listing with filters (role, status, search).
+- User creation with role assignment and initial password/email notification.
+- User status toggle (activate/suspend).
+- Profile update endpoint (name, phone, avatar).
+- Password change endpoint (requires current password).
+- Soft delete implementation with restore capability.
+
+## User Stories
+- As an Owner, I want to create employee accounts so they can log into the POS.
+- As an Admin, I want to suspend a user so I can immediately revoke access without deleting history.
+- As an Employee, I want to update my phone number so my contact info stays current.
+
+## Use Cases
+- **Onboarding:** Admin fills form → Validates → Creates user → Assigns EMPLOYEE role → Sends credentials → User appears in active list.
+- **Suspension:** Owner selects user → Toggles status → System revokes active tokens → User cannot login.
+- **Password Change:** User submits current + new password → Validates → Updates hash → Logs out other devices.
+
+## Permissions Matrix
+| Role     | users.view | users.create | users.update | users.delete | users.suspend | profile.update |
+|----------|------------|--------------|--------------|--------------|---------------|----------------|
+| ADMIN    | ✓          | ✓            | ✓            | ✓            | ✓             | ✓              |
+| OWNER    | ✓          | ✓            | ✓            | ✓            | ✓             | ✓              |
+| EMPLOYEE | Own only   | ✗            | ✗            | ✗            | ✗             | ✓              |
+
+## Database Design
+### Tables & Columns
+- `users`: `id`, `name`, `email` (unique), `password`, `phone`, `avatar_url`, `status` (enum: active, inactive, suspended), `email_verified_at`, `last_login_at`, `created_at`, `updated_at`, `deleted_at`
+- `role_user`: (from Phase 1)
+
+### Relationships
+- `User` ↔ `Role` (Many-to-Many)
+- `User` → `Sale` (One-to-Many, cashier)
+- `User` → `AuditLog` (One-to-Many)
+
+## Validation Rules
+- Name: `required|string|max:100`
+- Email: `required|email|unique:users,email,{id}`
+- Phone: `nullable|string|max:20|regex:/^\+?[0-9\s\-]{7,20}$/`
+- Status: `required|in:active,inactive,suspended`
+- Avatar: `nullable|image|mimes:jpeg,png,webp|max:2048`
+- Password Change: `current_password` required, `new_password` matches Phase 1 rules, `confirmed`
+
+## Business Rules
+- Users cannot delete themselves.
+- ADMIN/OWNER cannot be suspended by EMPLOYEE.
+- Last active ADMIN/OWNER cannot be deleted or suspended.
+- Email must be unique across active and soft-deleted records (unless restored).
+- Avatar uploads are resized and optimized before storage.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/users`
+- `POST /api/v1/users`
+- `GET /api/v1/users/{id}`
+- `PUT /api/v1/users/{id}`
+- `PATCH /api/v1/users/{id}/status`
+- `DELETE /api/v1/users/{id}`
+- `GET /api/v1/profile`
+- `PUT /api/v1/profile`
+- `POST /api/v1/profile/password`
+
+### Request Examples
+```json
+POST /api/v1/users
+{
+  "name": "Jane Smith",
+  "email": "jane@watchshop.com",
+  "phone": "+1234567890",
+  "role_ids": [3],
+  "status": "active"
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "id": 12,
+    "name": "Jane Smith",
+    "email": "jane@watchshop.com",
+    "status": "active",
+    "roles": ["EMPLOYEE"],
+    "created_at": "2026-06-02T12:00:00Z"
+  },
+  "message": "User created successfully",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `404 Not Found`: User ID does not exist or is permanently deleted
+- `409 Conflict`: Email already in use
+- `422 Unprocessable Entity`: Validation failure
+- `403 Forbidden`: Attempting to modify higher-privilege user
+
+## Security Requirements
+- Password reset/change requires current password verification.
+- File upload validation prevents executable/malicious payloads.
+- Role assignment restricted to ADMIN/OWNER.
+- Sensitive fields (password, tokens) never exposed in API responses.
+- Audit all user lifecycle changes.
+
+## Acceptance Criteria
+- CRUD operations function correctly with proper validation.
+- Role assignment reflects immediately in permission checks.
+- Status toggle correctly blocks/allows authentication.
+- Profile and password updates work for authenticated users.
+- Soft deletes preserve relational integrity and audit history.
+- Pagination and filtering perform efficiently on PostgreSQL.
+
+## Future Enhancements
+- Bulk user import via CSV.
+- Employee shift scheduling integration.
+- Biometric login fallback for POS terminals.
+- Multi-branch user assignment.
+
+---
+
+# Phase 3: Product Catalog Management
+
+## Overview
+**Phase Objective:** Build a flexible product catalog supporting Classic and Smart Watches, including categories, brands, variants, attributes, and pricing structures.
+**Problem Solved:** Provides a structured, searchable, and scalable way to manage diverse watch inventory with specific attributes (movement type, OS, strap material, water resistance) required for POS sales and reporting.
+**User Interaction:** Admin/Owner manages catalog via React dashboard. Employees search/browse products during sales.
+**Backend Architecture Considerations:** Eloquent polymorphic attributes or PostgreSQL JSONB for flexible specs. Repository pattern for complex filtering. API Resources with conditional includes (variants, images). Slug generation for SEO/frontend routing. Price history tracking preparation.
+
+## Business Requirements
+- Manage product categories and brands.
+- Create products with type classification (Classic/Smart).
+- Support variants (color, size, strap, storage).
+- Define pricing (cost, retail, wholesale, tax-inclusive/exclusive).
+- Attach images and specifications.
+- Enable/disable products for sales.
+
+## Functional Requirements
+- CRUD for categories, brands, products, variants.
+- Attribute management (global and type-specific).
+- Price and tax configuration per product.
+- Image upload and ordering.
+- Search and filter by type, brand, category, price range, status.
+- Bulk status update.
+
+## User Stories
+- As an Owner, I want to add smart watches with OS and battery specs so I can track tech-specific inventory.
+- As an Employee, I want to search products by name or SKU so I can quickly add items to the cart.
+- As an Admin, I want to set retail and cost prices so I can track margins.
+
+## Use Cases
+- **Product Creation:** Admin selects type → Fills base info → Adds variants → Sets prices → Uploads images → Publishes.
+- **Variant Management:** Admin edits parent product → Adds new strap color variant → System generates unique SKU → Updates catalog.
+- **Catalog Search:** Employee types "Seiko" → API returns matching active products with stock status → Frontend displays grid.
+
+## Permissions Matrix
+| Role     | catalog.view | catalog.create | catalog.update | catalog.delete | pricing.edit |
+|----------|--------------|----------------|----------------|----------------|--------------|
+| ADMIN    | ✓            | ✓              | ✓              | ✓              | ✓            |
+| OWNER    | ✓            | ✓              | ✓              | ✓              | ✓            |
+| EMPLOYEE | ✓            | ✗              | ✗              | ✗              | ✗            |
+
+## Database Design
+### Tables & Columns
+- `categories`: `id`, `name`, `slug`, `parent_id`, `description`, `is_active`, `created_at`, `updated_at`
+- `brands`: `id`, `name`, `slug`, `logo_url`, `country_origin`, `is_active`, `created_at`, `updated_at`
+- `products`: `id`, `category_id`, `brand_id`, `name`, `slug`, `sku_base`, `type` (enum: classic, smart), `description`, `status` (enum: draft, active, discontinued), `cost_price`, `retail_price`, `tax_rate_id`, `created_at`, `updated_at`, `deleted_at`
+- `product_variants`: `id`, `product_id`, `sku`, `attributes` (JSONB), `barcode`, `price_override`, `status`, `created_at`, `updated_at`
+- `product_images`: `id`, `product_id`, `variant_id` (nullable), `url`, `sort_order`, `created_at`
+
+### Relationships
+- `Category` → `Category` (Self-referencing One-to-Many)
+- `Brand` → `Product` (One-to-Many)
+- `Product` → `ProductVariant` (One-to-Many)
+- `Product` → `ProductImage` (One-to-Many)
+- `Product` → `TaxRate` (Many-to-One)
+
+## Validation Rules
+- SKU: `required|string|max:50|unique:product_variants,sku,{id}`
+- Prices: `required|numeric|min:0|max:999999.99`
+- Type: `required|in:classic,smart`
+- Attributes (JSONB): Valid JSON, max 5KB
+- Images: `mimes:jpeg,png,webp|max:5120`, max 10 per product
+- Slug: `unique`, auto-generated if empty
+
+## Business Rules
+- Classic watches require: movement_type, case_material, water_resistance.
+- Smart watches require: os_compatibility, battery_life, connectivity.
+- Variants inherit base price unless `price_override` is set.
+- Discontinued products cannot be added to new sales but remain in history.
+- SKU generation follows pattern: `{BRAND_CODE}-{TYPE}-{SEQ}`.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/categories`, `POST/PUT/DELETE /api/v1/categories/{id}`
+- `GET /api/v1/brands`, `POST/PUT/DELETE /api/v1/brands/{id}`
+- `GET /api/v1/products`, `POST /api/v1/products`, `GET/PUT/DELETE /api/v1/products/{id}`
+- `POST /api/v1/products/{id}/variants`, `PUT /api/v1/variants/{id}`
+- `POST /api/v1/products/{id}/images`
+
+### Request Examples
+```json
+POST /api/v1/products
+{
+  "name": "Galaxy Watch 6",
+  "type": "smart",
+  "category_id": 4,
+  "brand_id": 2,
+  "cost_price": 150.00,
+  "retail_price": 299.99,
+  "tax_rate_id": 1,
+  "variants": [
+    { "sku": "SAM-SM-BLK-40", "attributes": {"color":"black","size":"40mm"}, "price_override": null }
+  ]
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "id": 45,
+    "name": "Galaxy Watch 6",
+    "type": "smart",
+    "sku_base": "SAM-SM",
+    "retail_price": 299.99,
+    "variants_count": 1,
+    "status": "active"
+  },
+  "message": "Product created successfully",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `422 Unprocessable Entity`: Missing required attributes for watch type
+- `409 Conflict`: Duplicate SKU or barcode
+- `400 Bad Request`: Invalid JSONB structure in attributes
+- `500 Internal Server Error`: Image processing failure
+
+## Security Requirements
+- File uploads scanned/sandboxed.
+- Price manipulation restricted to ADMIN/OWNER.
+- SQL injection prevented via Eloquent/Query Builder.
+- Rate limiting on search endpoints to prevent scraping.
+- Audit all price and status changes.
+
+## Acceptance Criteria
+- Categories, brands, products, and variants can be created/updated/deleted.
+- Type-specific attributes are enforced via validation.
+- SKU uniqueness and barcode validation work correctly.
+- Image upload, ordering, and storage function as specified.
+- Search and filtering return accurate, paginated results.
+- Discontinued products are excluded from POS but retained in DB.
+
+## Future Enhancements
+- Multi-currency pricing support.
+- Dynamic pricing rules (time-based, volume discounts).
+- Barcode/QR code generation and printing.
+- Product recommendation engine based on sales history.
+
+---
+
+# Phase 4: Inventory Management
+
+## Overview
+**Phase Objective:** Implement real-time stock tracking, serial number management, stock adjustments, and low-stock alerting for watch variants.
+**Problem Solved:** Prevents overselling, ensures accurate financial valuation, tracks individual high-value watches via serial numbers, and automates replenishment triggers.
+**User Interaction:** Staff view stock levels, perform stock takes, adjust quantities, and receive low-stock warnings. System automatically deducts stock on sale completion.
+**Backend Architecture Considerations:** PostgreSQL transactions for atomic stock updates. Row-level locking (`lockForUpdate()`) during checkout. Event-driven architecture: `StockDepleted`, `LowStockAlert`. Repository pattern for complex inventory queries. Redis caching for fast POS stock checks.
+
+## Business Requirements
+- Track quantity per variant.
+- Manage serial numbers for individual watches (critical for warranty).
+- Record all stock movements (sales, purchases, adjustments, returns).
+- Support manual stock adjustments with reason codes.
+- Trigger alerts when stock falls below threshold.
+- Prevent negative stock without explicit override.
+
+## Functional Requirements
+- Real-time stock level API.
+- Serial number registration and status tracking (In Stock, Sold, Returned, Defective).
+- Stock adjustment workflow with approval (optional).
+- Low stock threshold configuration per product/variant.
+- Stock movement history with audit trail.
+- CSV export for physical stock takes.
+
+## User Stories
+- As an Employee, I want to see available stock before adding to cart so I don't promise unavailable items.
+- As an Owner, I want to track serial numbers so I can honor warranties accurately.
+- As an Admin, I want to adjust stock after a physical count so the system matches reality.
+
+## Use Cases
+- **Sale Deduction:** Checkout completes → Service locks variant row → Deducts qty → Marks serial as Sold → Logs movement → Commits.
+- **Stock Adjustment:** Admin selects variant → Enters new qty → Provides reason → System calculates delta → Creates movement record → Updates inventory.
+- **Low Stock Alert:** Nightly job checks thresholds → Queues notifications → Dashboard shows warning badge.
+
+## Permissions Matrix
+| Role     | inventory.view | inventory.adjust | inventory.override_negative | serials.manage | thresholds.edit |
+|----------|----------------|------------------|-----------------------------|----------------|-----------------|
+| ADMIN    | ✓              | ✓                | ✓                           | ✓              | ✓               |
+| OWNER    | ✓              | ✓                | ✓                           | ✓              | ✓               |
+| EMPLOYEE | ✓              | ✗                | ✗                           | View only      | ✗               |
+
+## Database Design
+### Tables & Columns
+- `inventory_items`: `id`, `variant_id`, `quantity`, `low_stock_threshold`, `reserved_quantity`, `updated_at`
+- `serial_numbers`: `id`, `variant_id`, `serial_code` (unique), `status` (enum: in_stock, sold, returned, defective, lost), `sale_id` (nullable), `created_at`, `updated_at`
+- `stock_movements`: `id`, `variant_id`, `serial_id` (nullable), `type` (enum: purchase, sale, return, adjustment, loss), `quantity_change`, `reference_type`, `reference_id`, `reason`, `performed_by`, `created_at`
+
+### Relationships
+- `ProductVariant` → `InventoryItem` (One-to-One)
+- `ProductVariant` → `SerialNumber` (One-to-Many)
+- `Sale` → `SerialNumber` (One-to-Many)
+- `StockMovement` → `ProductVariant` (Many-to-One)
+- `StockMovement` → `User` (Many-to-One)
+
+## Validation Rules
+- Quantity: `integer|min:0` (unless override permitted)
+- Serial Code: `required|string|max:100|unique:serial_numbers,serial_code`
+- Adjustment Reason: `required|string|max:255`
+- Threshold: `integer|min:0`
+- Movement Type: `required|in:purchase,sale,return,adjustment,loss`
+
+## Business Rules
+- Stock cannot go below zero unless `inventory.override_negative` permission exists and reason is provided.
+- Each physical watch must have a unique serial number registered before sale.
+- Reserved quantity increments when cart is active, decrements on timeout/cancellation.
+- Stock movements are immutable once created.
+- Low stock alerts trigger when `quantity <= low_stock_threshold`.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/inventory`
+- `GET /api/v1/inventory/{variant_id}`
+- `POST /api/v1/inventory/adjust`
+- `GET /api/v1/inventory/movements`
+- `GET /api/v1/inventory/low-stock`
+- `POST /api/v1/serials/register`
+- `GET /api/v1/serials/{code}`
+
+### Request Examples
+```json
+POST /api/v1/inventory/adjust
+{
+  "variant_id": 12,
+  "new_quantity": 5,
+  "reason": "Physical stock count correction",
+  "serials_added": ["SN99887766", "SN99887767"]
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "variant_id": 12,
+    "previous_quantity": 3,
+    "new_quantity": 5,
+    "movement_id": 892,
+    "adjusted_by": "Admin User"
+  },
+  "message": "Stock adjusted successfully",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `409 Conflict`: Serial number already registered
+- `422 Unprocessable Entity`: Negative stock without override permission
+- `404 Not Found`: Variant or serial not found
+- `500 Internal Server Error`: Transaction deadlock (retry recommended)
+
+## Security Requirements
+- All adjustments require authenticated user with explicit permission.
+- Row-level locking prevents race conditions during concurrent sales.
+- Serial number status changes are strictly controlled and audited.
+- API rate limiting on inventory endpoints to prevent DoS.
+- Immutable stock movement logs prevent financial tampering.
+
+## Acceptance Criteria
+- Stock levels update atomically during sales and adjustments.
+- Serial numbers are uniquely tracked and linked to sales.
+- Low stock thresholds trigger accurate alerts.
+- Stock movement history is complete and uneditable.
+- Negative stock prevention works unless explicitly overridden.
+- Inventory API responds within 200ms under load.
+
+## Future Enhancements
+- Multi-location/warehouse inventory routing.
+- Automated purchase order generation from low stock.
+- RFID/Barcode scanner integration for stock takes.
+- Predictive stock replenishment using ML.
+
+---
+
+# Phase 5: Supplier Management
+
+## Overview
+**Phase Objective:** Centralize vendor information, contact details, payment terms, and performance tracking to streamline procurement workflows.
+**Problem Solved:** Eliminates scattered vendor data, standardizes purchasing communication, and enables cost/lead-time analysis for better inventory planning.
+**User Interaction:** Admin/Owner creates and manages supplier profiles. Employees do not interact directly. Procurement module references supplier data.
+**Backend Architecture Considerations:** Simple CRUD with relational contacts. PostgreSQL JSONB for flexible terms/metadata. Repository pattern for filtering by rating/status. Soft deletes for historical purchase integrity.
+
+## Business Requirements
+- Maintain supplier directory with legal and contact details.
+- Track payment terms, lead times, and currency preferences.
+- Record multiple contact persons per supplier.
+- Rate suppliers based on delivery performance and quality.
+- Enable/disable suppliers for purchasing.
+
+## Functional Requirements
+- CRUD for suppliers and contacts.
+- Search and filter by name, status, rating.
+- Attach documents (contracts, certificates).
+- View purchase history summary per supplier.
+- Status management (Active, Inactive, Blacklisted).
+
+## User Stories
+- As an Owner, I want to store supplier payment terms so purchase orders reflect correct due dates.
+- As an Admin, I want to blacklist a supplier so they don't appear in new purchase orders.
+- As a Buyer, I want to view past delivery performance so I can choose reliable vendors.
+
+## Use Cases
+- **Supplier Onboarding:** Admin enters company details → Adds contacts → Sets terms → Saves → Supplier available for PO creation.
+- **Performance Review:** System calculates on-time delivery % → Updates rating → Owner reviews dashboard → Adjusts preferred status.
+- **Blacklisting:** Admin changes status to Blacklisted → System prevents new POs → Historical data remains intact.
+
+## Permissions Matrix
+| Role     | suppliers.view | suppliers.create | suppliers.update | suppliers.delete | suppliers.blacklist |
+|----------|----------------|------------------|------------------|------------------|---------------------|
+| ADMIN    | ✓              | ✓                | ✓                | ✓                | ✓                   |
+| OWNER    | ✓              | ✓                | ✓                | ✓                | ✓                   |
+| EMPLOYEE | ✗              | ✗                | ✗                | ✗                | ✗                   |
+
+## Database Design
+### Tables & Columns
+- `suppliers`: `id`, `company_name`, `trade_license`, `email`, `phone`, `address`, `city`, `country`, `payment_terms` (enum: cod, net15, net30, net60), `lead_time_days`, `currency`, `rating` (1-5), `status` (enum: active, inactive, blacklisted), `notes`, `created_at`, `updated_at`, `deleted_at`
+- `supplier_contacts`: `id`, `supplier_id`, `name`, `role`, `email`, `phone`, `is_primary`, `created_at`, `updated_at`
+
+### Relationships
+- `Supplier` → `SupplierContact` (One-to-Many)
+- `Supplier` → `PurchaseOrder` (One-to-Many)
+
+## Validation Rules
+- Company Name: `required|string|max:150|unique:suppliers,company_name,{id}`
+- Email/Phone: `required` for at least one contact or supplier level
+- Payment Terms: `required|in:cod,net15,net30,net60`
+- Lead Time: `integer|min:0|max:365`
+- Rating: `integer|min:1|max:5`
+
+## Business Rules
+- Blacklisted suppliers cannot be selected for new purchase orders.
+- Primary contact is used for automated PO emails.
+- Currency defaults to system base currency if not specified.
+- Supplier deletion is soft; hard delete only allowed if no purchase history exists.
+- Rating is auto-calculated from Phase 6 delivery data but can be manually overridden.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/suppliers`
+- `POST /api/v1/suppliers`
+- `GET /api/v1/suppliers/{id}`
+- `PUT /api/v1/suppliers/{id}`
+- `DELETE /api/v1/suppliers/{id}`
+- `POST /api/v1/suppliers/{id}/contacts`
+- `GET /api/v1/suppliers/{id}/purchase-history`
+
+### Request Examples
+```json
+POST /api/v1/suppliers
+{
+  "company_name": "TimePiece Distributors Ltd",
+  "payment_terms": "net30",
+  "lead_time_days": 7,
+  "currency": "USD",
+  "contacts": [
+    { "name": "Alice Vendor", "role": "Sales Manager", "email": "alice@timepiece.com", "is_primary": true }
+  ]
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "id": 8,
+    "company_name": "TimePiece Distributors Ltd",
+    "status": "active",
+    "rating": 4,
+    "contacts_count": 1
+  },
+  "message": "Supplier created successfully",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `409 Conflict`: Duplicate company name or trade license
+- `422 Unprocessable Entity`: Missing primary contact or invalid terms
+- `403 Forbidden`: Employee attempting access
+- `404 Not Found`: Supplier ID invalid or permanently deleted
+
+## Security Requirements
+- PII (contact emails/phones) masked in logs.
+- Role-based access strictly enforced.
+- File attachments (if added later) scanned and stored securely.
+- Audit all supplier status changes and blacklist actions.
+- Prevent mass assignment of sensitive fields.
+
+## Acceptance Criteria
+- Supplier CRUD operations function with full validation.
+- Contacts are correctly linked and primary flag enforced.
+- Blacklisted suppliers are excluded from PO creation dropdowns.
+- Search and filtering perform efficiently.
+- Soft deletes preserve purchase history integrity.
+- API responses include relational counts and summaries.
+
+## Future Enhancements
+- Supplier portal for self-service PO acknowledgment.
+- Automated email PO dispatch with read receipts.
+- Contract expiry alerts and compliance tracking.
+- Multi-currency exchange rate integration.
+
+---
+
+# Phase 6: Purchase Management
+
+## Overview
+**Phase Objective:** Manage the procurement lifecycle from purchase order creation to goods receipt, cost tracking, and inventory reconciliation.
+**Problem Solved:** Formalizes restocking workflow, tracks landed costs, handles partial deliveries, and ensures inventory and financial records match supplier invoices.
+**User Interaction:** Admin/Owner creates POs, approves them, receives goods, and reconciles invoices. System updates inventory and cost prices automatically.
+**Backend Architecture Considerations:** State machine for PO status (Draft → Pending → Approved → Partially Received → Completed → Cancelled). Database transactions for goods receipt. Repository pattern for complex aggregation. Event listeners for inventory updates and cost averaging.
+
+## Business Requirements
+- Create and manage purchase orders linked to suppliers.
+- Support line items with variants, quantities, and unit costs.
+- Approval workflow before sending to supplier.
+- Record goods receipts (full or partial).
+- Update inventory and adjust cost prices (weighted average).
+- Track discrepancies between ordered and received quantities.
+
+## Functional Requirements
+- CRUD for purchase orders and items.
+- Status transition endpoints with validation.
+- Goods receipt recording with serial number assignment.
+- Automatic inventory increment on receipt.
+- Cost price recalculation (moving average).
+- PO PDF generation for printing/emailing.
+- Dispute/return tracking for damaged goods.
+
+## User Stories
+- As an Owner, I want to approve purchase orders so I can control cash outflow.
+- As an Admin, I want to receive partial shipments so inventory updates accurately without waiting for full delivery.
+- As a System, I want to recalculate cost prices so margin reports remain accurate.
+
+## Use Cases
+- **PO Creation:** Admin selects supplier → Adds variants & qty → Sets expected cost → Saves as Draft → Submits for approval.
+- **Approval:** Owner reviews PO → Approves → Status changes to Approved → PDF generated → Sent to supplier.
+- **Goods Receipt:** Warehouse receives box → Opens PO → Enters received qty & serials → System updates inventory → Recalculates cost → Marks PO status accordingly.
+
+## Permissions Matrix
+| Role     | purchases.view | purchases.create | purchases.approve | purchases.receive | purchases.cancel |
+|----------|----------------|------------------|-------------------|-------------------|------------------|
+| ADMIN    | ✓              | ✓                | ✓                 | ✓                 | ✓                |
+| OWNER    | ✓              | ✓                | ✓                 | ✓                 | ✓                |
+| EMPLOYEE | ✗              | ✗                | ✗                 | ✗                 | ✗                |
+
+## Database Design
+### Tables & Columns
+- `purchase_orders`: `id`, `supplier_id`, `po_number` (unique), `status` (enum: draft, pending, approved, partially_received, completed, cancelled), `order_date`, `expected_delivery_date`, `total_amount`, `tax_amount`, `discount_amount`, `notes`, `created_by`, `approved_by`, `created_at`, `updated_at`
+- `purchase_order_items`: `id`, `purchase_order_id`, `variant_id`, `quantity_ordered`, `quantity_received`, `unit_cost`, `line_total`, `created_at`, `updated_at`
+- `goods_receipts`: `id`, `purchase_order_id`, `receipt_number`, `received_by`, `received_at`, `notes`, `created_at`
+- `goods_receipt_items`: `id`, `goods_receipt_id`, `po_item_id`, `quantity_received`, `serial_numbers` (JSONB), `condition` (enum: good, damaged), `created_at`
+
+### Relationships
+- `Supplier` → `PurchaseOrder` (One-to-Many)
+- `PurchaseOrder` → `PurchaseOrderItem` (One-to-Many)
+- `PurchaseOrder` → `GoodsReceipt` (One-to-Many)
+- `GoodsReceipt` → `GoodsReceiptItem` (One-to-Many)
+- `PurchaseOrderItem` → `ProductVariant` (Many-to-One)
+
+## Validation Rules
+- PO Number: `unique`, auto-generated if empty
+- Quantities: `integer|min:1`
+- Unit Cost: `numeric|min:0`
+- Status Transitions: Enforced via state validation (e.g., cannot receive from Draft)
+- Serial Numbers: Must match received quantity exactly
+- Dates: `expected_delivery_date` >= `order_date`
+
+## Business Rules
+- PO must be Approved before goods can be received.
+- Received quantity cannot exceed ordered quantity without explicit override.
+- Cost price updated using weighted average formula: `((old_qty * old_cost) + (new_qty * new_cost)) / (old_qty + new_qty)`
+- Damaged items do not increment sellable inventory; logged separately.
+- Cancelled POs cannot be received or modified.
+- All receipts generate immutable stock movements.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/purchases`
+- `POST /api/v1/purchases`
+- `GET /api/v1/purchases/{id}`
+- `PUT /api/v1/purchases/{id}`
+- `POST /api/v1/purchases/{id}/approve`
+- `POST /api/v1/purchases/{id}/receive`
+- `POST /api/v1/purchases/{id}/cancel`
+- `GET /api/v1/purchases/{id}/pdf`
+
+### Request Examples
+```json
+POST /api/v1/purchases/{id}/receive
+{
+  "items": [
+    { "po_item_id": 45, "quantity_received": 5, "serial_numbers": ["SN111", "SN112", "SN113", "SN114", "SN115"], "condition": "good" }
+  ],
+  "notes": "Box slightly damaged, contents intact"
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "receipt_id": 12,
+    "po_status": "partially_received",
+    "inventory_updated": true,
+    "cost_recalculated": true
+  },
+  "message": "Goods received successfully",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `422 Unprocessable Entity`: Invalid status transition or serial count mismatch
+- `409 Conflict`: PO already completed or cancelled
+- `403 Forbidden`: Unauthorized approval/receipt attempt
+- `500 Internal Server Error`: Inventory transaction failure (rollback triggered)
+
+## Security Requirements
+- Approval and receipt actions require explicit permissions.
+- Financial fields (costs, totals) immutable after receipt.
+- Audit trail for all status changes and overrides.
+- PDF generation sandboxed to prevent injection.
+- Row locking during receipt processing to prevent double-receiving.
+
+## Acceptance Criteria
+- PO lifecycle transitions enforce business rules strictly.
+- Goods receipt accurately updates inventory and serial statuses.
+- Weighted average cost calculation is mathematically correct.
+- Partial receipts update PO status correctly.
+- Cancelled/Draft POs cannot affect inventory.
+- All financial and stock changes are fully audited.
+
+## Future Enhancements
+- Landed cost allocation (shipping, customs, insurance).
+- Supplier invoice matching and accounts payable integration.
+- Automated reorder point suggestions.
+- Multi-currency PO settlement tracking.
+
+---
+
+# Phase 7: POS Sales Module
+
+## Overview
+**Phase Objective:** Deliver a high-performance, transaction-safe checkout system supporting cart management, discounts, taxes, multiple payment methods, and refunds.
+**Problem Solved:** Enables fast, accurate sales processing with real-time stock validation, flexible pricing, and secure payment handling tailored for watch retail.
+**User Interaction:** Cashier scans/selects items, applies discounts, selects payment method, completes sale. System prints receipt and updates inventory instantly.
+**Backend Architecture Considerations:** Idempotency keys for checkout requests. Database transactions with `lockForUpdate()` on inventory. Redis for temporary cart storage. Service layer handles tax calculation, discount application, and payment routing. Event-driven post-sale actions (receipt generation, warranty creation, loyalty points).
+
+## Business Requirements
+- Manage temporary carts per terminal/session.
+- Add/remove items with real-time price and stock validation.
+- Apply line-item and cart-level discounts.
+- Calculate taxes accurately based on product rules.
+- Process multiple payment methods (Cash, Card, Digital, Split).
+- Handle full/partial refunds and exchanges.
+- Enforce role-based discount/refund limits.
+
+## Functional Requirements
+- Cart CRUD endpoints (add, update, remove, clear).
+- Checkout endpoint with atomic transaction.
+- Discount validation and application engine.
+- Tax calculation service.
+- Payment recording with reference tracking.
+- Refund/return workflow with inventory reversal.
+- Sales history and receipt lookup.
+
+## User Stories
+- As a Cashier, I want to add items to a cart quickly so I can serve customers efficiently.
+- As an Owner, I want to limit employee discount percentages so I can protect margins.
+- As a Customer, I want to split payment between cash and card so I can pay conveniently.
+
+## Use Cases
+- **Checkout:** Cashier finalizes cart → Submits checkout with payment → System locks stock → Validates prices/stock → Creates sale → Deducts inventory → Records payment → Returns sale ID → Triggers receipt/warranty events.
+- **Discount Application:** Cashier enters 10% discount → System checks employee limit → Applies if valid → Recalculates totals.
+- **Refund:** Customer returns watch → Cashier scans receipt → System validates return window → Processes refund → Restocks serial → Updates financials.
+
+## Permissions Matrix
+| Role     | pos.cart.manage | pos.checkout | pos.discount.apply | pos.refund.process | pos.view_history |
+|----------|-----------------|--------------|--------------------|--------------------|------------------|
+| ADMIN    | ✓               | ✓            | ✓ (Unlimited)      | ✓                  | ✓                |
+| OWNER    | ✓               | ✓            | ✓ (Unlimited)      | ✓                  | ✓                |
+| EMPLOYEE | ✓               | ✓            | ✓ (Max 10%)        | ✗                  | Own shifts only  |
+
+## Database Design
+### Tables & Columns
+- `sales`: `id`, `sale_number` (unique), `customer_id` (nullable), `cashier_id`, `status` (enum: completed, refunded, partially_refunded, cancelled), `subtotal`, `discount_amount`, `tax_amount`, `total_amount`, `payment_status`, `notes`, `completed_at`, `created_at`, `updated_at`
+- `sale_items`: `id`, `sale_id`, `variant_id`, `serial_id`, `quantity`, `unit_price`, `discount_amount`, `tax_amount`, `line_total`, `created_at`
+- `payments`: `id`, `sale_id`, `method` (enum: cash, card, digital, split), `amount`, `reference`, `received_by`, `processed_at`, `created_at`
+- `refunds`: `id`, `sale_id`, `amount`, `reason`, `processed_by`, `status`, `created_at`
+- `discounts`: `id`, `code`, `type` (enum: percentage, fixed), `value`, `max_discount`, `role_restriction`, `starts_at`, `expires_at`, `is_active`
+
+### Relationships
+- `Sale` → `SaleItem` (One-to-Many)
+- `Sale` → `Payment` (One-to-Many)
+- `Sale` → `Refund` (One-to-Many)
+- `SaleItem` → `SerialNumber` (One-to-One)
+- `User` → `Sale` (One-to-Many, cashier)
+
+## Validation Rules
+- Cart Items: `variant_id` exists, `quantity` > 0, stock available
+- Discount: `value` within role limit, not expired, applicable to cart
+- Payment: `amount` >= total due, valid method, reference required for non-cash
+- Refund: `amount` <= original paid, within return window (e.g., 14 days)
+- Idempotency Key: `required|string|max:100` for checkout
+
+## Business Rules
+- Checkout is atomic: fails entirely if any item is out of stock or price changed.
+- Employee discount capped at configured limit; override requires Admin/Owner PIN.
+- Split payments allowed; total must match sale total exactly.
+- Refunds restore serial status to `returned` or `in_stock` based on condition.
+- Cancelled sales do not affect inventory or financials.
+- Tax calculated per item, rounded to 2 decimals, summed for total.
+
+## API Specification
+### Endpoints
+- `GET/POST/PUT/DELETE /api/v1/pos/cart`
+- `POST /api/v1/pos/checkout`
+- `GET /api/v1/pos/sales`
+- `GET /api/v1/pos/sales/{id}`
+- `POST /api/v1/pos/sales/{id}/refund`
+- `GET /api/v1/discounts/validate`
+
+### Request Examples
+```json
+POST /api/v1/pos/checkout
+Headers: { "X-Idempotency-Key": "uuid-v4-here" }
+{
+  "customer_id": null,
+  "items": [
+    { "variant_id": 12, "serial_id": 455, "quantity": 1, "unit_price": 299.99 }
+  ],
+  "discount_code": "SUMMER10",
+  "payments": [
+    { "method": "cash", "amount": 150.00 },
+    { "method": "card", "amount": 120.00, "reference": "TXN998877" }
+  ],
+  "notes": "Gift wrapping requested"
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "sale_id": 892,
+    "sale_number": "SAL-20260602-001",
+    "total_amount": 270.00,
+    "payment_status": "paid",
+    "receipt_url": "/api/v1/receipts/892"
+  },
+  "message": "Sale completed successfully",
+  "errors": null,
+  "meta": { "idempotency_key": "uuid-v4-here" }
+}
+```
+
+### Error Cases
+- `409 Conflict`: Idempotency key already processed
+- `422 Unprocessable Entity`: Stock unavailable, discount invalid, payment mismatch
+- `403 Forbidden`: Discount exceeds role limit
+- `500 Internal Server Error`: Transaction failure (auto-rollback)
+
+## Security Requirements
+- Idempotency keys prevent duplicate charges on network retries.
+- Row-level locking prevents overselling during concurrent checkouts.
+- Discount limits enforced server-side; frontend limits are UI-only.
+- Payment references validated and logged for audit.
+- Refund processing requires explicit permission and reason.
+- All financial calculations performed server-side.
+
+## Acceptance Criteria
+- Cart operations are fast and session-isolated.
+- Checkout processes atomically with full stock/price validation.
+- Discounts and taxes calculate accurately per business rules.
+- Split payments and refunds function correctly.
+- Idempotency prevents duplicate sales.
+- Role-based limits are strictly enforced.
+- All sales generate accurate audit and financial records.
+
+## Future Enhancements
+- Layaway/Installment payment tracking.
+- Customer loyalty points integration.
+- Offline mode with sync queue for network outages.
+- Dynamic pricing based on customer tier.
+
+---
+
+# Phase 8: Receipt & Voucher Module
+
+## Overview
+**Phase Objective:** Generate standardized receipt data, integrate with QZ Tray for local voucher printing, and manage receipt templates and reprint auditing.
+**Problem Solved:** Bridges web application with local thermal printers, ensures consistent branding, provides warranty proof, and tracks all print actions for compliance.
+**User Interaction:** Cashier completes sale → Clicks Print → Frontend sends receipt data to QZ Tray → Printer outputs voucher. Reprints require authorization and are logged.
+**Backend Architecture Considerations:** API returns structured JSON receipt payload. Frontend handles QZ Tray WebSocket communication and raw ESC/POS or HTML-to-print conversion. Backend stores receipt metadata, template configs, and print logs. No direct printer connection from Laravel.
+
+## Business Requirements
+- Generate structured receipt data for completed sales.
+- Support customizable receipt templates (header, footer, logo, warranty text).
+- Enable secure reprint functionality with audit logging.
+- Track print attempts and successes/failures.
+- Include QR code/barcode data for receipt verification.
+
+## Functional Requirements
+- Receipt data endpoint returning sale, items, payments, taxes, warranty info.
+- Template management (CRUD for header/footer/legal text).
+- Print log recording (user, timestamp, terminal, reason).
+- Reprint authorization workflow.
+- QR code generation payload for receipt validation.
+
+## User Stories
+- As a Cashier, I want to print a receipt immediately after sale so the customer gets proof of purchase.
+- As an Owner, I want to customize the receipt footer so I can display return policies and branding.
+- As an Admin, I want to track reprints so I can prevent fraudulent receipt duplication.
+
+## Use Cases
+- **Initial Print:** Sale completes → Frontend requests receipt JSON → Formats for QZ Tray → Sends to local printer → Logs success via API.
+- **Reprint:** Cashier requests reprint → System checks permission → Prompts for reason → Logs reprint → Returns receipt JSON → Prints.
+- **Template Update:** Owner edits footer text → Saves → New sales use updated template → Historical receipts remain unchanged.
+
+## Permissions Matrix
+| Role     | receipts.view | receipts.print | receipts.reprint | templates.manage | print_logs.view |
+|----------|---------------|----------------|------------------|------------------|-----------------|
+| ADMIN    | ✓             | ✓              | ✓                | ✓                | ✓               |
+| OWNER    | ✓             | ✓              | ✓                | ✓                | ✓               |
+| EMPLOYEE | ✓             | ✓              | ✓ (With reason)  | ✗                | ✗               |
+
+## Database Design
+### Tables & Columns
+- `receipts`: `id`, `sale_id`, `template_version`, `qr_payload`, `printed_at`, `created_at`
+- `receipt_templates`: `id`, `name`, `header_html`, `footer_html`, `warranty_text`, `is_active`, `created_at`, `updated_at`
+- `print_logs`: `id`, `receipt_id`, `user_id`, `terminal_id`, `action` (enum: initial, reprint), `reason`, `status` (enum: success, failed), `printed_at`, `created_at`
+
+### Relationships
+- `Sale` → `Receipt` (One-to-One)
+- `Receipt` → `PrintLog` (One-to-Many)
+- `User` → `PrintLog` (One-to-Many)
+
+## Validation Rules
+- Template HTML: `nullable|string|max:5000`, sanitized (no scripts)
+- Reprint Reason: `required_if:action,reprint|string|max:255`
+- QR Payload: `required|string|max:500`
+- Terminal ID: `required|string|max:50`
+
+## Business Rules
+- Initial print is automatic post-checkout.
+- Reprints require reason logging; unlimited for Admin/Owner, restricted for Employee.
+- Receipt data is immutable; templates versioned to preserve historical accuracy.
+- QR payload contains hashed sale ID + timestamp for offline verification.
+- Failed prints can be retried without duplicate logging.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/receipts/{sale_id}`
+- `POST /api/v1/receipts/{sale_id}/print`
+- `GET /api/v1/receipts/templates`
+- `PUT /api/v1/receipts/templates/{id}`
+- `GET /api/v1/receipts/logs`
+
+### Request Examples
+```json
+POST /api/v1/receipts/{sale_id}/print
+{
+  "terminal_id": "POS-01",
+  "action": "reprint",
+  "reason": "Printer jammed, customer requested copy"
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "sale_number": "SAL-20260602-001",
+    "store_info": { "name": "WatchHub", "address": "123 Main St" },
+    "items": [ { "name": "Galaxy Watch 6", "qty": 1, "price": 299.99 } ],
+    "totals": { "subtotal": 299.99, "tax": 15.00, "discount": 0, "total": 314.99 },
+    "payments": [ { "method": "cash", "amount": 314.99 } ],
+    "warranty": "12 months manufacturer warranty. Serial: SN111",
+    "qr_data": "eyJzYWxlIjoiODkyIiwidHMiOiIyMDI2LTA2LTAyIn0=",
+    "template": { "header": "<h1>WatchHub</h1>", "footer": "<p>No returns after 14 days</p>" }
+  },
+  "message": "Receipt data generated",
+  "errors": null,
+  "meta": { "print_log_id": 445 }
+}
+```
+
+### Error Cases
+- `404 Not Found`: Sale or receipt not found
+- `403 Forbidden`: Unauthorized reprint attempt
+- `422 Unprocessable Entity`: Missing reprint reason
+- `500 Internal Server Error`: Template rendering failure
+
+## Security Requirements
+- HTML templates sanitized to prevent XSS in print previews.
+- Reprint actions strictly audited with user/terminal/reason.
+- QR payload signed/hashed to prevent receipt forgery.
+- Rate limiting on receipt generation to prevent abuse.
+- No sensitive payment data (full card numbers) in receipt payload.
+
+## Acceptance Criteria
+- Receipt JSON contains all required sale, item, payment, and warranty data.
+- QZ Tray integration receives correctly formatted payload.
+- Reprints are authorized, reasoned, and logged accurately.
+- Template versioning preserves historical receipt accuracy.
+- QR codes generate valid verification payloads.
+- Print logs track all actions with timestamps and users.
+
+## Future Enhancements
+- Email/SMS receipt delivery.
+- Multi-language receipt templates.
+- Digital signature integration for high-value sales.
+- Cloud print fallback if QZ Tray unavailable.
+
+---
+
+# Phase 9: Customer & Warranty Management
+
+## Overview
+**Phase Objective:** Manage customer profiles, link sales to customers, track warranty periods, and handle warranty claims/repairs for after-sales service.
+**Problem Solved:** Enables loyalty building, streamlines warranty validation, tracks repair jobs, and ensures compliance with manufacturer/service terms.
+**User Interaction:** Cashier links sale to customer. Service staff register warranty claims, track repair status, and notify customers upon completion.
+**Backend Architecture Considerations:** Customer PII stored securely. Warranty engine calculates expiry based on sale date + product terms. Repair workflow state machine. Event-driven notifications (email/SMS stubs). Repository pattern for claim filtering and SLA tracking.
+
+## Business Requirements
+- Create and manage customer profiles.
+- Link sales to customers for purchase history.
+- Auto-generate warranties based on product terms.
+- Track warranty status (Active, Expired, Void, Claimed).
+- Manage repair jobs with status tracking and cost logging.
+- Validate warranty claims against purchase date and serial.
+
+## Functional Requirements
+- Customer CRUD with search and purchase history.
+- Warranty registration and expiry calculation.
+- Claim submission with validation rules.
+- Repair job tracking (Received, Diagnosing, Repairing, Ready, Completed, Cancelled).
+- Customer communication logging.
+- Warranty voiding rules (tampering, unauthorized repair).
+
+## User Stories
+- As a Cashier, I want to attach a customer to a sale so they can receive warranty coverage.
+- As a Service Tech, I want to validate a warranty claim so I can approve free repairs.
+- As an Owner, I want to track repair turnaround times so I can improve service SLAs.
+
+## Use Cases
+- **Warranty Registration:** Sale completes → System checks product warranty term → Creates warranty record linked to serial & customer → Sets expiry date.
+- **Claim Validation:** Customer brings watch → Staff scans serial → System checks warranty status & expiry → Approves/Rejects claim → Creates repair job.
+- **Repair Completion:** Tech finishes repair → Updates status to Ready → System notifies customer → Customer picks up → Status set to Completed.
+
+## Permissions Matrix
+| Role     | customers.view | customers.create | warranties.view | warranties.claim | repairs.manage |
+|----------|----------------|------------------|-----------------|------------------|----------------|
+| ADMIN    | ✓              | ✓                | ✓               | ✓                | ✓              |
+| OWNER    | ✓              | ✓                | ✓               | ✓                | ✓              |
+| EMPLOYEE | ✓              | ✓                | ✓               | ✓                | View only      |
+
+## Database Design
+### Tables & Columns
+- `customers`: `id`, `name`, `email`, `phone`, `address`, `notes`, `created_at`, `updated_at`
+- `warranties`: `id`, `sale_id`, `serial_id`, `customer_id`, `start_date`, `end_date`, `status` (enum: active, expired, void, claimed), `terms`, `created_at`, `updated_at`
+- `warranty_claims`: `id`, `warranty_id`, `claim_number`, `reason`, `status` (enum: pending, approved, rejected), `submitted_by`, `submitted_at`, `resolved_at`
+- `repair_jobs`: `id`, `claim_id`, `serial_id`, `status` (enum: received, diagnosing, repairing, ready, completed, cancelled), `diagnosis`, `repair_cost`, `technician_id`, `created_at`, `updated_at`
+
+### Relationships
+- `Customer` → `Sale` (One-to-Many)
+- `Customer` → `Warranty` (One-to-Many)
+- `Warranty` → `WarrantyClaim` (One-to-Many)
+- `WarrantyClaim` → `RepairJob` (One-to-One)
+- `SerialNumber` → `Warranty` (One-to-One)
+
+## Validation Rules
+- Customer Email/Phone: Unique, valid format
+- Warranty Dates: `end_date` > `start_date`
+- Claim Reason: `required|string|max:500`
+- Repair Cost: `numeric|min:0`
+- Status Transitions: Enforced via workflow validation
+
+## Business Rules
+- Warranty auto-generated on sale if product has warranty term > 0.
+- Claims rejected if warranty expired, voided, or serial mismatch.
+- Void warranty if tamper seal broken or unauthorized service detected.
+- Repair costs billed to customer if warranty expired/rejected.
+- SLA tracking: alerts if repair exceeds configured days (e.g., 7 days).
+- Customer PII access logged for compliance.
+
+## API Specification
+### Endpoints
+- `GET/POST/PUT /api/v1/customers`
+- `GET /api/v1/customers/{id}/history`
+- `GET /api/v1/warranties/{serial}`
+- `POST /api/v1/warranties/{id}/claim`
+- `GET/POST/PUT /api/v1/repairs`
+- `POST /api/v1/repairs/{id}/status`
+
+### Request Examples
+```json
+POST /api/v1/warranties/{id}/claim
+{
+  "reason": "Screen flickering, not turning on consistently",
+  "customer_description": "Started after 2 months of normal use"
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "claim_id": 33,
+    "claim_number": "CLM-20260602-01",
+    "status": "approved",
+    "warranty_valid": true,
+    "repair_job_id": 12,
+    "estimated_completion": "2026-06-09"
+  },
+  "message": "Warranty claim approved, repair job created",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `422 Unprocessable Entity`: Warranty expired or invalid serial
+- `409 Conflict`: Active claim already exists for serial
+- `403 Forbidden`: Unauthorized status transition
+- `404 Not Found`: Warranty or customer not found
+
+## Security Requirements
+- PII encryption at rest for sensitive customer fields.
+- GDPR/CCPA compliance: data export and deletion endpoints prepared.
+- Warranty validation strictly server-side; frontend displays only.
+- Repair cost modifications audited.
+- Access to customer data restricted by role and necessity.
+
+## Acceptance Criteria
+- Customer profiles link correctly to sales and warranties.
+- Warranty expiry calculates accurately from sale date.
+- Claims validate against warranty status and serial correctly.
+- Repair workflow transitions enforce business rules.
+- SLA alerts trigger for overdue repairs.
+- All PII access and modifications are audited.
+
+## Future Enhancements
+- Automated SMS/Email warranty expiry reminders.
+- Customer loyalty tier integration.
+- Third-party service center routing.
+- Digital warranty cards with QR verification.
+
+---
+
+# Phase 10: Reports & Analytics
+
+## Overview
+**Phase Objective:** Provide comprehensive sales, inventory, financial, and employee performance reports with export capabilities and dashboard summaries.
+**Problem Solved:** Transforms raw transactional data into actionable business intelligence, enabling data-driven decisions, financial reconciliation, and performance tracking.
+**User Interaction:** Owner/Admin accesses dashboard, filters reports by date range/category/employee, exports to CSV/PDF, and views KPIs.
+**Backend Architecture Considerations:** PostgreSQL materialized views or optimized aggregate queries. Read replicas consideration for heavy loads. Repository pattern for report generation. Async export jobs for large datasets. Caching for dashboard KPIs. Strict data scoping per role.
+
+## Business Requirements
+- Daily/Weekly/Monthly sales summaries.
+- Top-selling products and categories.
+- Inventory valuation and low stock reports.
+- Profit margin analysis (Revenue - COGS).
+- Employee sales performance tracking.
+- Export reports to CSV and PDF.
+- Role-based data visibility (Owner sees all, Employee sees own).
+
+## Functional Requirements
+- Dashboard KPI endpoint (revenue, transactions, avg order value, low stock count).
+- Sales report with filters (date, category, brand, cashier).
+- Inventory report (stock levels, valuation, turnover rate).
+- Financial report (gross profit, tax collected, payment method breakdown).
+- Employee performance report.
+- Async export job tracking and download endpoints.
+
+## User Stories
+- As an Owner, I want to see daily profit margins so I can assess business health.
+- As an Admin, I want to export monthly sales to CSV so I can reconcile with accounting software.
+- As a Manager, I want to track employee sales performance so I can identify training needs.
+
+## Use Cases
+- **Dashboard Load:** User opens dashboard → API fetches cached KPIs → Frontend renders charts → Real-time updates via polling/websockets (future).
+- **Report Generation:** User selects date range & filters → API queries aggregates → Returns paginated data → User clicks Export → Job queued → Download link provided.
+- **Performance Review:** Owner filters by employee → Views sales count, revenue, discount usage → Identifies trends.
+
+## Permissions Matrix
+| Role     | reports.dashboard | reports.sales | reports.inventory | reports.financial | reports.export | reports.employee |
+|----------|-------------------|---------------|-------------------|-------------------|----------------|------------------|
+| ADMIN    | ✓                 | ✓             | ✓                 | ✓                 | ✓              | ✓                |
+| OWNER    | ✓                 | ✓             | ✓                 | ✓                 | ✓              | ✓                |
+| EMPLOYEE | ✓ (Own data)      | ✓ (Own data)  | ✗                 | ✗                 | ✗              | ✓ (Own data)     |
+
+## Database Design
+### Tables & Columns
+- `report_exports`: `id`, `user_id`, `type`, `filters` (JSONB), `status` (enum: pending, processing, completed, failed), `file_url`, `created_at`, `updated_at`
+- Materialized Views (PostgreSQL):
+  - `mv_daily_sales`: `date`, `total_sales`, `total_revenue`, `total_tax`, `total_discount`, `transaction_count`
+  - `mv_inventory_valuation`: `variant_id`, `sku`, `quantity`, `cost_price`, `retail_price`, `total_cost_value`, `total_retail_value`
+
+### Relationships
+- `User` → `ReportExport` (One-to-Many)
+- Views aggregate from `sales`, `sale_items`, `inventory_items`, `products`
+
+## Validation Rules
+- Date Range: `required`, `start_date` <= `end_date`, max 365 days
+- Filters: Valid enums/IDs, sanitized
+- Export Type: `required|in:csv,pdf`
+- Pagination: `page` >= 1, `per_page` <= 100
+
+## Business Rules
+- Financial reports use completed sales only; exclude cancelled/refunded amounts appropriately.
+- COGS calculated from weighted average cost at time of sale.
+- Employee reports scoped to authenticated user unless Admin/Owner.
+- Exports older than 30 days auto-deleted.
+- Dashboard KPIs cached for 5 minutes.
+
+## API Specification
+### Endpoints
+- `GET /api/v1/reports/dashboard`
+- `GET /api/v1/reports/sales`
+- `GET /api/v1/reports/inventory`
+- `GET /api/v1/reports/financial`
+- `GET /api/v1/reports/employees`
+- `POST /api/v1/reports/export`
+- `GET /api/v1/reports/exports/{id}/download`
+
+### Request Examples
+```json
+POST /api/v1/reports/export
+{
+  "type": "csv",
+  "report": "sales",
+  "filters": { "start_date": "2026-05-01", "end_date": "2026-05-31", "category_id": 4 }
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "export_id": 77,
+    "status": "pending",
+    "estimated_time": "15s"
+  },
+  "message": "Export job queued",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `422 Unprocessable Entity`: Invalid date range or filters
+- `403 Forbidden`: Accessing financial/employee data without permission
+- `404 Not Found`: Export job not found or expired
+- `500 Internal Server Error`: Aggregation query timeout
+
+## Security Requirements
+- Row-level security scoping for employee data.
+- Financial data access strictly limited to Admin/Owner.
+- Export files stored securely with signed, time-limited URLs.
+- Query parameter sanitization to prevent SQL injection.
+- Rate limiting on heavy report endpoints.
+
+## Acceptance Criteria
+- Dashboard KPIs load quickly and reflect accurate data.
+- Reports filter and paginate correctly across all dimensions.
+- Financial calculations (revenue, COGS, margin) are mathematically accurate.
+- Exports generate correctly and download securely.
+- Role-based data scoping works flawlessly.
+- Materialized views refresh on schedule or trigger.
+
+## Future Enhancements
+- Real-time WebSocket dashboard updates.
+- Predictive analytics and demand forecasting.
+- Integration with accounting software (QuickBooks, Xero).
+- Custom report builder with drag-and-drop fields.
+
+---
+
+# Phase 11: Production Hardening & System Administration
+
+## Overview
+**Phase Objective:** Finalize deployment configurations, implement monitoring, backup strategies, audit logging, cache/queue management, and system settings for production readiness.
+**Problem Solved:** Ensures system reliability, data safety, compliance, and operational control. Provides tools for administrators to maintain, monitor, and troubleshoot the live environment.
+**User Interaction:** Admin/Owner accesses system settings, views audit logs, triggers backups, clears caches, and monitors health. Developers/DevOps use endpoints for CI/CD and monitoring.
+**Backend Architecture Considerations:** Laravel Horizon for queue monitoring. Scheduled tasks for backups and view refreshes. Centralized config management. Tamper-proof audit logs. Health check aggregation. Graceful degradation strategies.
+
+## Business Requirements
+- Manage system-wide settings (store info, tax defaults, currency, operating hours).
+- Maintain immutable audit logs for all critical actions.
+- Automate database and file backups.
+- Monitor queue, cache, and job health.
+- Provide administrative controls for cache clearing and maintenance mode.
+- Ensure compliance and data retention policies.
+
+## Functional Requirements
+- System settings CRUD with validation.
+- Audit log viewer with advanced filtering.
+- Backup trigger and status tracking.
+- Queue/Cache stats endpoint.
+- Maintenance mode toggle.
+- Log rotation and archival configuration.
+- API versioning and deprecation notices.
+
+## User Stories
+- As an Owner, I want to update store hours and tax rates so the POS reflects current business rules.
+- As an Admin, I want to view audit logs so I can investigate suspicious activities.
+- As a DevOps Engineer, I want automated backups and health checks so I can ensure uptime and data safety.
+
+## Use Cases
+- **Settings Update:** Admin changes default tax rate → System validates → Updates config → Clears relevant caches → Logs change.
+- **Audit Investigation:** Owner filters logs by user & date → Reviews actions → Exports log segment → Takes corrective action.
+- **Backup & Recovery:** Scheduled job runs → Dumps PostgreSQL → Compresses → Uploads to S3 → Verifies checksum → Logs success.
+
+## Permissions Matrix
+| Role     | settings.view | settings.update | audit_logs.view | backups.manage | system.maintenance | cache.manage |
+|----------|---------------|-----------------|-----------------|----------------|--------------------|--------------|
+| ADMIN    | ✓             | ✓               | ✓               | ✓              | ✓                  | ✓            |
+| OWNER    | ✓             | ✓               | ✓               | ✓              | ✗                  | ✗            |
+| EMPLOYEE | ✗             | ✗               | ✗               | ✗              | ✗                  | ✗            |
+
+## Database Design
+### Tables & Columns
+- `system_settings`: `id`, `key` (unique), `value` (JSONB), `group`, `updated_by`, `updated_at`
+- `audit_logs`: (Extended from Phase 0, indexed heavily on `user_id`, `action`, `created_at`)
+- `backups`: `id`, `filename`, `size_bytes`, `status`, `location`, `checksum`, `created_at`
+- `job_batches`: (Laravel default for tracking bulk operations)
+
+### Relationships
+- `User` → `SystemSetting` (One-to-Many, updater)
+- `User` → `AuditLog` (One-to-Many)
+- No direct business relationships; purely administrative.
+
+## Validation Rules
+- Settings Key: `required|string|max:100|unique`
+- Settings Value: Valid JSON, type-checked per key schema
+- Backup Location: `required|in:local,s3,gcs`
+- Maintenance Mode: `boolean`
+- Audit Filters: Valid dates, enums, IDs
+
+## Business Rules
+- Critical settings (tax, currency) require confirmation and log changes.
+- Audit logs are append-only; no updates or deletes allowed via API.
+- Backups retained for 90 days; older auto-purged.
+- Maintenance mode blocks all non-admin API requests with 503.
+- Cache clearing scoped to prevent full system flush unless necessary.
+- System timezone locked to UTC; frontend handles localization.
+
+## API Specification
+### Endpoints
+- `GET/PUT /api/v1/admin/settings`
+- `GET /api/v1/admin/audit-logs`
+- `POST /api/v1/admin/backups`
+- `GET /api/v1/admin/backups`
+- `GET /api/v1/admin/system/health`
+- `POST /api/v1/admin/cache/clear`
+- `POST /api/v1/admin/maintenance`
+
+### Request Examples
+```json
+PUT /api/v1/admin/settings
+{
+  "settings": [
+    { "key": "store.tax_default", "value": 0.08 },
+    { "key": "store.currency", "value": "USD" }
+  ]
+}
+```
+
+### Response Examples
+```json
+{
+  "success": true,
+  "data": {
+    "updated": 2,
+    "cache_cleared": ["config", "settings"],
+    "audit_logged": true
+  },
+  "message": "System settings updated successfully",
+  "errors": null,
+  "meta": null
+}
+```
+
+### Error Cases
+- `403 Forbidden`: Non-admin accessing system endpoints
+- `422 Unprocessable Entity`: Invalid setting schema or value type
+- `500 Internal Server Error`: Backup failure or cache driver unreachable
+- `503 Service Unavailable`: Maintenance mode active
+
+## Security Requirements
+- Admin endpoints IP-whitelisted in production.
+- Audit logs stored in append-only table; DB-level restrictions prevent tampering.
+- Backups encrypted at rest and in transit.
+- Settings updates trigger cache invalidation securely.
+- Maintenance mode bypass token for CI/CD health checks.
+- Strict rate limiting and brute force protection on admin routes.
+
+## Acceptance Criteria
+- System settings update correctly and reflect immediately in business logic.
+- Audit logs capture all critical actions immutably.
+- Backups generate, store, and verify successfully.
+- Health endpoint accurately reports subsystem status.
+- Maintenance mode toggles access correctly.
+- Cache management functions without disrupting active transactions.
+- All admin actions are fully audited and role-restricted.
+
+## Future Enhancements
+- Multi-region deployment and geo-routing.
+- Automated disaster recovery failover.
+- Advanced anomaly detection on audit logs.
+- Self-healing queue workers and auto-scaling.
+- Compliance certification tooling (PCI-DSS, SOC2).
