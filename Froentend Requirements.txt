@@ -1,0 +1,1985 @@
+================================================================================
+LUXWATCH - FRONTEND DEVELOPMENT ROADMAP & REQUIREMENTS
+Watch Shop POS and Management System
+================================================================================
+PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+LuxWatch is a comprehensive Watch Shop POS and Management System for:
+- Classic Watches
+- Smart Watches
+User Roles:
+- ADMIN: Full system access, configuration, all reports
+- OWNER: Business operations, reports, staff management
+- EMPLOYEE (Cashier/Seller): POS sales, customer service, basic inventory
+================================================================================
+TECHNOLOGY STACK
+================================================================================
+CORE FRAMEWORK:
+- React 19+ (with TypeScript)
+- Vite (Build tool & Dev server)
+UI & STYLING:
+- Tailwind CSS (Utility-first CSS framework)
+- Shadcn UI (Component library built on Radix UI)
+- Lucide React (Icon library)
+- Custom SCSS modules (for complex animations)
+STATE MANAGEMENT:
+- Zustand (Global application state)
+- TanStack Query v5 (Server state, caching, synchronization)
+FORMS & VALIDATION:
+- React Hook Form (Form handling)
+- Zod (Schema validation)
+- @hookform/resolvers (Integration)
+ROUTING:
+- React Router v6+ (Navigation)
+- Protected routes with role-based access
+DATA VISUALIZATION:
+- Recharts (Charts & graphs)
+- TanStack Table (Advanced data tables)
+HTTP CLIENT:
+- Axios (API requests with interceptors)
+UTILITIES:
+- date-fns (Date manipulation)
+- numfmt (Number formatting)
+- barcode-vue / quagga (Barcode scanning)
+- react-to-print (Receipt printing)
+NOTIFICATIONS:
+- Sonner (Toast notifications)
+- Custom confirmation dialogs
+================================================================================
+DESIGN PHILOSOPHY
+================================================================================
+Visual Style:
+- Modern, minimal, professional
+- Clean dashboards with clear hierarchy
+- Consistent spacing (8px grid system)
+- Consistent typography (Inter font family)
+- Subtle animations (200-300ms transitions)
+- High contrast for accessibility
+Responsive Breakpoints:
+- Desktop: 1280px+ (Primary target - POS stations)
+- Laptop: 1024px - 1279px
+- Tablet: 768px - 1023px (Secondary support)
+- Mobile: < 768px (Admin views only, not POS)
+Color Palette:
+- Primary: Deep Blue (#1e40af)
+- Secondary: Slate Gray (#64748b)
+- Success: Emerald (#10b981)
+- Warning: Amber (#f59e0b)
+- Danger: Rose (#f43f5e)
+- Background: White / Light Gray (#f8fafc)
+- Surface: White with subtle shadows
+================================================================================
+UX PRINCIPLES
+================================================================================
+For Cashiers (EMPLOYEE):
+- Minimum clicks to complete sale (< 5 clicks ideal)
+- Fast product search (barcode, name, SKU)
+- Quick actions (hold cart, recall customer, apply discount)
+- Clear visual feedback on every action
+- Keyboard shortcuts for common operations
+For Shop Owners (OWNER):
+- At-a-glance dashboard KPIs
+- Easy report generation
+- Staff performance visibility
+- Inventory alerts and low stock warnings
+For Administrators (ADMIN):
+- Complete system configuration
+- User and permission management
+- Audit logs and activity tracking
+- Backup and export capabilities
+Loading States:
+- Skeleton loaders for all data-fetching screens
+- Optimistic updates for non-critical actions
+- Progress indicators for multi-step processes
+Error Handling:
+- Friendly error messages with recovery options
+- Inline validation with instant feedback
+- Graceful degradation on API failures
+Empty States:
+- Illustrations with helpful guidance
+- Clear call-to-action buttons
+- Links to create first item
+================================================================================
+BACKEND API ANALYSIS SUMMARY
+================================================================================
+Authentication:
+- POST /api/auth/login - User login
+- POST /api/auth/logout - User logout
+- GET /api/auth/me - Current user info
+- POST /api/auth/refresh - Refresh token
+Users:
+- GET /api/users - List users (paginated, filterable)
+- POST /api/users - Create user
+- GET /api/users/{id} - Get user details
+- PUT /api/users/{id} - Update user
+- DELETE /api/users/{id} - Delete user
+- PATCH /api/users/{id}/status - Toggle status
+- GET /api/users/{id}/permissions - Get permissions
+- PUT /api/users/{id}/permissions - Update permissions
+- GET /api/profile - Get current profile
+- PUT /api/profile - Update profile
+- PUT /api/profile/password - Change password
+Categories:
+- GET /api/categories - List categories
+- POST /api/categories - Create category
+- GET /api/categories/{id} - Get category
+- PUT /api/categories/{id} - Update category
+- DELETE /api/categories/{id} - Delete category
+- GET /api/categories/tree - Hierarchical tree
+Brands:
+- GET /api/brands - List brands
+- POST /api/brands - Create brand
+- GET /api/brands/{id} - Get brand
+- PUT /api/brands/{id} - Update brand
+- DELETE /api/brands/{id} - Delete brand
+Products:
+- GET /api/products - List products
+- POST /api/products - Create product
+- GET /api/products/{id} - Get product details
+- PUT /api/products/{id} - Update product
+- DELETE /api/products/{id} - Delete product
+- POST /api/products/{id}/images - Upload images
+- DELETE /api/products/images/{id} - Remove image
+- GET /api/products/{id}/variants - Get variants
+- POST /api/products/{id}/variants - Create variant
+- PUT /api/products/variants/{id} - Update variant
+- DELETE /api/products/variants/{id} - Delete variant
+- GET /api/products/search - Search products
+Inventory:
+- GET /api/inventory - Stock levels
+- GET /api/inventory/{productId} - Product stock
+- POST /api/inventory/adjust - Adjust stock
+- GET /api/inventory/movements - Movement history
+- GET /api/inventory/serials - Serial numbers
+- GET /api/inventory/serials/{serial} - Serial lookup
+- GET /api/inventory/alerts - Low stock alerts
+Suppliers:
+- GET /api/suppliers - List suppliers
+- POST /api/suppliers - Create supplier
+- GET /api/suppliers/{id} - Get supplier
+- PUT /api/suppliers/{id} - Update supplier
+- DELETE /api/suppliers/{id} - Delete supplier
+- GET /api/suppliers/{id}/contacts - Get contacts
+- POST /api/suppliers/{id}/contacts - Add contact
+- PUT /api/suppliers/contacts/{id} - Update contact
+- DELETE /api/suppliers/contacts/{id} - Delete contact
+- GET /api/suppliers/{id}/purchases - Purchase history
+Purchase Orders:
+- GET /api/purchase-orders - List orders
+- POST /api/purchase-orders - Create order
+- GET /api/purchase-orders/{id} - Get order
+- PUT /api/purchase-orders/{id} - Update order
+- DELETE /api/purchase-orders/{id} - Cancel order
+- POST /api/purchase-orders/{id}/approve - Approve
+- POST /api/purchase-orders/{id}/receive - Receive
+- GET /api/purchase-orders/{id}/items - Get items
+- POST /api/purchase-orders/{id}/items - Add items
+- PUT /api/purchase-orders/items/{id} - Update item
+- DELETE /api/purchase-orders/items/{id} - Remove item
+POS & Sales:
+- GET /api/pos/cart - Get current cart
+- POST /api/pos/cart/items - Add to cart
+- PUT /api/pos/cart/items/{id} - Update cart item
+- DELETE /api/pos/cart/items/{id} - Remove from cart
+- POST /api/pos/cart/clear - Clear cart
+- POST /api/pos/checkout - Process sale
+- GET /api/sales - Sales history
+- GET /api/sales/{id} - Sale details
+- GET /api/sales/{id}/receipt - Receipt data
+- POST /api/sales/{id}/refund - Process refund
+- GET /api/sales/today - Today's sales summary
+Customers:
+- GET /api/customers - List customers
+- POST /api/customers - Create customer
+- GET /api/customers/{id} - Get customer
+- PUT /api/customers/{id} - Update customer
+- DELETE /api/customers/{id} - Delete customer
+- GET /api/customers/{id}/purchases - Purchase history
+- GET /api/customers/search - Search customers
+Warranties:
+- GET /api/warranties - List warranties
+- GET /api/warranties/{serial} - Lookup by serial
+- POST /api/warranties/claim - Register claim
+- PUT /api/warranties/{id} - Update claim
+- POST /api/warranties/{id}/void - Void warranty
+- GET /api/warranties/expiring - Expiring soon
+Repairs:
+- GET /api/repairs - List repairs
+- POST /api/repairs - Create repair job
+- GET /api/repairs/{id} - Repair details
+- PUT /api/repairs/{id} - Update repair
+- POST /api/repairs/{id}/status - Update status
+- POST /api/repairs/{id}/complete - Complete repair
+Reports:
+- GET /api/reports/dashboard - Dashboard KPIs
+- GET /api/reports/sales - Sales report
+- GET /api/reports/sales/daily - Daily sales
+- GET /api/reports/sales/monthly - Monthly sales
+- GET /api/reports/products - Product performance
+- GET /api/reports/inventory - Inventory report
+- GET /api/reports/financial - Financial summary
+- GET /api/reports/employees - Employee performance
+- GET /api/reports/export - Export data (CSV/PDF)
+Receipts:
+- GET /api/receipts/templates - List templates
+- POST /api/receipts/templates - Create template
+- PUT /api/receipts/templates/{id} - Update template
+- GET /api/receipts/logs - Print logs
+Settings:
+- GET /api/settings - Get all settings
+- PUT /api/settings - Update settings
+- GET /api/settings/{group} - Get group settings
+- PUT /api/settings/{group} - Update group
+================================================================================
+PHASE 1: FRONTEND FOUNDATION & ARCHITECTURE
+================================================================================
+OBJECTIVE:
+Establish the core project structure, configure build tools, set up base 
+components, and create the foundation for all subsequent phases.
+FEATURES INCLUDED:
+- Project initialization with Vite + React 19 + TypeScript
+- Tailwind CSS configuration with custom theme
+- Shadcn UI component installation
+- Base layout components
+- Theme provider (light/dark mode ready)
+- Error boundary implementation
+- Loading skeleton components
+- Toast notification system setup
+- Utility functions and helpers
+- Type definitions and interfaces
+- API client configuration with Axios
+- Environment variable setup
+PAGES INCLUDED:
+- None (foundation phase - no user-facing pages yet)
+- Placeholder home route for testing
+COMPONENTS INCLUDED:
+- App.tsx (Root component)
+- ErrorBoundary.tsx
+- LoadingSkeleton.tsx (Multiple variants)
+- EmptyState.tsx
+- PageHeader.tsx
+- SectionCard.tsx
+- StatCard.tsx
+- DataTable skeleton
+- FormField wrapper
+- Button variants (primary, secondary, outline, ghost, danger)
+- Input variants
+- Select wrapper
+- Modal/Dialog base
+- Tooltip wrapper
+- Badge variants
+- Avatar component
+- Spinner/Loader
+API INTEGRATIONS REQUIRED:
+- None (setup only API client infrastructure)
+- Health check endpoint test: GET /api/health (if exists)
+STATE MANAGEMENT REQUIREMENTS:
+- Zustand store setup for:
+  - appState (theme, sidebar state, notifications)
+  - authState placeholder (for Phase 2)
+- TanStack Query client setup with:
+  - Default query config (retry, staleTime, gcTime)
+  - Query keys factory pattern
+  - Custom hooks structure
+UX REQUIREMENTS:
+- Consistent loading skeletons across all future components
+- Smooth transition animations (200ms ease-in-out)
+- Accessible focus states
+- Keyboard navigation ready
+- Screen reader friendly structure
+RESPONSIVE REQUIREMENTS:
+- Mobile-first CSS approach
+- Breakpoint utilities configured
+- Container max-widths defined
+- Grid system established
+VALIDATION REQUIREMENTS:
+- Zod schema patterns established
+- Common validators (email, phone, required, min/max length)
+- Custom error message formatter
+SECURITY CONSIDERATIONS:
+- Environment variables for API base URL
+- CSRF token handling setup (for Laravel Sanctum)
+- Secure header configuration
+- XSS prevention through React defaults
+ACCEPTANCE CRITERIA:
+✓ Project builds without errors
+✓ Tailwind classes compile correctly
+✓ Shadcn components render properly
+✓ Theme switching works (if implemented)
+✓ Error boundary catches and displays errors
+✓ Skeleton loaders display correctly
+✓ Toast notifications appear on trigger
+✓ API client can make test requests
+✓ TypeScript compiles with no errors
+✓ ESLint passes with configured rules
+✓ Prettier formats code consistently
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── assets/
+│   ├── images/
+│   ├── icons/
+│   └── fonts/
+├── components/
+│   ├── ui/                    # Shadcn base components
+│   │   ├── button.tsx
+│   │   ├── input.tsx
+│   │   ├── select.tsx
+│   │   ├── dialog.tsx
+│   │   ├── tooltip.tsx
+│   │   ├── badge.tsx
+│   │   ├── avatar.tsx
+│   │   └── ...
+│   ├── common/                # Custom reusable components
+│   │   ├── ErrorBoundary.tsx
+│   │   ├── LoadingSkeleton.tsx
+│   │   ├── EmptyState.tsx
+│   │   ├── PageHeader.tsx
+│   │   ├── SectionCard.tsx
+│   │   ├── StatCard.tsx
+│   │   └── ...
+│   └── forms/                 # Form-related components
+│       ├── FormField.tsx
+│       ├── FormLabel.tsx
+│       └── FormError.tsx
+├── config/
+│   ├── api.ts                 # Axios instance & config
+│   ├── constants.ts           # App constants
+│   └── env.ts                 # Environment validation
+├── hooks/
+│   ├── useApi.ts              # Generic API hook
+│   ├── useDebounce.ts
+│   ├── useLocalStorage.ts
+│   └── ...
+├── lib/
+│   ├── utils.ts               # CN helper, formatters
+│   ├── validators.ts          # Zod schemas
+│   └── types.ts               # Global types
+├── stores/
+│   ├── appStore.ts            # App state (Zustand)
+│   └── index.ts               # Store exports
+├── styles/
+│   ├── globals.css            # Tailwind imports
+│   ├── variables.css          # CSS custom properties
+│   └── animations.css         # Custom animations
+├── types/
+│   ├── api.ts                 # API response types
+│   ├── common.ts              # Common type definitions
+│   └── index.ts
+├── utils/
+│   ├── formatters.ts          # Date, number, currency
+│   ├── helpers.ts             # General utilities
+│   └── index.ts
+├── App.tsx
+├── main.tsx
+└── vite-env.d.ts
+================================================================================
+PHASE 2: AUTHENTICATION, AUTHORIZATION & LAYOUT SYSTEM
+================================================================================
+OBJECTIVE:
+Implement complete authentication flow, role-based access control, and the 
+main application layout with navigation.
+FEATURES INCLUDED:
+- Login page with form validation
+- Logout functionality
+- Remember me option
+- Password reset request (if backend supports)
+- Role-based route protection
+- Permission-based component rendering
+- Main dashboard layout
+- Sidebar navigation with collapsible sections
+- Top navigation bar with user menu
+- Breadcrumb navigation
+- Session timeout handling
+- Token refresh mechanism
+PAGES INCLUDED:
+- /login - Login page
+- /logout - Logout processing
+- /forgot-password - Password reset request (optional)
+- /reset-password - Password reset form (optional)
+- Layout wrapper for protected routes
+COMPONENTS INCLUDED:
+- LoginForm.tsx
+- ProtectedRoute.tsx
+- RoleGuard.tsx
+- PermissionGuard.tsx
+- DashboardLayout.tsx
+- Sidebar.tsx
+- SidebarItem.tsx
+- SidebarSection.tsx
+- TopNav.tsx
+- UserMenu.tsx
+- Breadcrumbs.tsx
+- SessionTimeoutModal.tsx
+- NavLogo.tsx
+- MobileNavToggle.tsx
+- NotificationBell.tsx
+API INTEGRATIONS REQUIRED:
+- POST /api/auth/login - User authentication
+- POST /api/auth/logout - End session
+- GET /api/auth/me - Fetch current user & permissions
+- POST /api/auth/refresh - Refresh access token
+- POST /api/auth/forgot-password - Request reset (if available)
+- POST /api/auth/reset-password - Reset password (if available)
+STATE MANAGEMENT REQUIREMENTS:
+- authStore (Zustand):
+  - user: User object
+  - token: Access token
+  - refreshToken: Refresh token
+  - isAuthenticated: boolean
+  - permissions: string[]
+  - role: string
+  - login() action
+  - logout() action
+  - fetchUser() action
+  - updatePermissions() action
+- Persisted storage for tokens (secure httpOnly cookies or localStorage)
+- TanStack Query for:
+  - useCurrentUser query
+  - useLogin mutation
+  - useLogout mutation
+UX REQUIREMENTS:
+- Clean, focused login page
+- Clear error messages for invalid credentials
+- Loading state during authentication
+- Redirect to intended destination after login
+- Smooth sidebar transitions
+- Active state highlighting in navigation
+- User avatar with dropdown menu
+- Session warning before timeout
+- Auto-logout on token expiry
+RESPONSIVE REQUIREMENTS:
+- Login page centered and responsive
+- Collapsible sidebar on mobile/tablet
+- Hamburger menu for mobile navigation
+- Touch-friendly navigation items
+- Bottom sheet for mobile user menu
+VALIDATION REQUIREMENTS:
+- Login form:
+  - Email: required, valid format
+  - Password: required, min 8 characters
+- Password reset:
+  - Email: required, valid format
+- Zod schemas for all forms
+SECURITY CONSIDERATIONS:
+- Secure token storage
+- CSRF protection headers
+- Automatic token refresh
+- Session timeout enforcement
+- Role verification on route access
+- Permission checks on sensitive actions
+- Logout on 401 responses
+- Prevent navigation to unauthorized routes
+ACCEPTANCE CRITERIA:
+✓ Login form validates correctly
+✓ Successful login redirects to dashboard
+✓ Failed login shows appropriate error
+✓ User data loads after login
+✓ Protected routes redirect to login when unauthenticated
+✓ Role-based routing works correctly
+✓ Sidebar reflects user permissions
+✓ Logout clears session and redirects
+✓ Token refresh happens automatically
+✓ Session timeout warns user before logout
+✓ Navigation is responsive on all devices
+✓ Mobile menu toggles correctly
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── components/
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   ├── ForgotPasswordForm.tsx
+│   │   ├── ResetPasswordForm.tsx
+│   │   └── AuthLayout.tsx
+│   ├── layout/
+│   │   ├── DashboardLayout.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── SidebarItem.tsx
+│   │   ├── SidebarSection.tsx
+│   │   ├── TopNav.tsx
+│   │   ├── UserMenu.tsx
+│   │   ├── Breadcrumbs.tsx
+│   │   └── MobileNav.tsx
+│   └── guards/
+│       ├── ProtectedRoute.tsx
+│       ├── RoleGuard.tsx
+│       └── PermissionGuard.tsx
+├── pages/
+│   ├── auth/
+│   │   ├── LoginPage.tsx
+│   │   ├── ForgotPasswordPage.tsx
+│   │   └── ResetPasswordPage.tsx
+│   └── ...
+├── stores/
+│   └── authStore.ts
+├── hooks/
+│   ├── useAuth.ts
+│   ├── usePermissions.ts
+│   ├── useSessionTimeout.ts
+│   └── useProtectedRoute.ts
+├── types/
+│   └── auth.ts
+└── utils/
+    └── authHelpers.ts
+================================================================================
+PHASE 3: DASHBOARD & USER MANAGEMENT
+================================================================================
+OBJECTIVE:
+Build the main dashboard with KPI widgets and implement complete user 
+management functionality including roles and permissions.
+FEATURES INCLUDED:
+- Dashboard with key metrics
+- Sales overview charts
+- Recent activity feed
+- Low stock alerts widget
+- User list with filtering and pagination
+- User creation form
+- User edit form
+- User status toggle
+- Role assignment
+- Permission management matrix
+- Profile viewing and editing
+- Password change functionality
+PAGES INCLUDED:
+- /dashboard - Main dashboard
+- /users - User list
+- /users/create - Create user
+- /users/:id - User details
+- /users/:id/edit - Edit user
+- /users/:id/permissions - Manage permissions
+- /profile - Current user profile
+- /profile/password - Change password
+COMPONENTS INCLUDED:
+- DashboardLayout (from Phase 2)
+- KPICard.tsx
+- SalesChart.tsx
+- ActivityFeed.tsx
+- AlertsWidget.tsx
+- UserTable.tsx
+- UserFilters.tsx
+- UserForm.tsx
+- UserStatusBadge.tsx
+- RoleSelect.tsx
+- PermissionMatrix.tsx
+- PermissionCheckbox.tsx
+- ProfileForm.tsx
+- PasswordChangeForm.tsx
+- UserAvatar.tsx
+- ActivityTimeline.tsx
+API INTEGRATIONS REQUIRED:
+Dashboard:
+- GET /api/reports/dashboard - KPI data
+- GET /api/reports/sales/daily - Daily sales chart
+- GET /api/inventory/alerts - Low stock alerts
+- GET /api/sales/today - Today's summary
+Users:
+- GET /api/users - List users (paginated)
+- POST /api/users - Create user
+- GET /api/users/{id} - Get user details
+- PUT /api/users/{id} - Update user
+- DELETE /api/users/{id} - Delete user
+- PATCH /api/users/{id}/status - Toggle status
+- GET /api/roles - List roles (if separate endpoint)
+- GET /api/permissions - List all permissions
+- GET /api/users/{id}/permissions - Get user permissions
+- PUT /api/users/{id}/permissions - Update permissions
+Profile:
+- GET /api/profile - Get current profile
+- PUT /api/profile - Update profile
+- PUT /api/profile/password - Change password
+STATE MANAGEMENT REQUIREMENTS:
+- TanStack Query for:
+  - useDashboardData query
+  - useUsers query (with pagination)
+  - useUser query
+  - useCreateUser mutation
+  - useUpdateUser mutation
+  - useDeleteUser mutation
+  - useToggleUserStatus mutation
+  - usePermissions query
+  - useUserPermissions query
+  - useUpdatePermissions mutation
+  - useProfile query
+  - useUpdateProfile mutation
+  - useChangePassword mutation
+- Local filters state for user table
+- Sorting state for tables
+UX REQUIREMENTS:
+- Dashboard loads with skeleton placeholders
+- Charts animate on load
+- Real-time KPI updates (optional polling)
+- User table with sortable columns
+- Quick search for users
+- Confirmation before deleting users
+- Visual permission matrix (checkbox grid)
+- Success toast on all mutations
+- Optimistic updates for status toggle
+- Form auto-save draft (optional)
+RESPONSIVE REQUIREMENTS:
+- Dashboard grid adapts to screen size
+- Charts resize responsively
+- User table becomes card view on mobile
+- Forms stack vertically on small screens
+- Permission matrix scrolls horizontally if needed
+VALIDATION REQUIREMENTS:
+- User form:
+  - Name: required, min 2 chars
+  - Email: required, valid format, unique
+  - Role: required
+  - Password: required on create, min 8 chars
+  - Phone: optional, valid format
+- Profile form:
+  - Name: required
+  - Email: required, valid
+  - Phone: optional
+- Password change:
+  - Current password: required
+  - New password: required, min 8 chars
+  - Confirm password: must match
+SECURITY CONSIDERATIONS:
+- Only ADMIN/OWNER can access user management
+- Users cannot delete themselves
+- Permission changes require ADMIN role
+- Password change requires current password
+- Sanitize all inputs
+- Display masked emails/phones if sensitive
+ACCEPTANCE CRITERIA:
+✓ Dashboard displays all KPIs correctly
+✓ Charts render with correct data
+✓ User list paginates correctly
+✓ User search filters results
+✓ Create user form validates and submits
+✓ Edit user loads existing data
+✓ Status toggle updates immediately
+✓ Permission matrix saves correctly
+✓ Delete user requires confirmation
+✓ Profile page shows current user data
+✓ Password change validates and updates
+✓ All mutations show success/error toasts
+✓ Unauthorized users cannot access pages
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── components/
+│   ├── dashboard/
+│   │   ├── KPICard.tsx
+│   │   ├── SalesChart.tsx
+│   │   ├── ActivityFeed.tsx
+│   │   ├── AlertsWidget.tsx
+│   │   └── DashboardGrid.tsx
+│   ├── users/
+│   │   ├── UserTable.tsx
+│   │   ├── UserFilters.tsx
+│   │   ├── UserForm.tsx
+│   │   ├── UserStatusBadge.tsx
+│   │   ├── RoleSelect.tsx
+│   │   ├── PermissionMatrix.tsx
+│   │   └── UserAvatar.tsx
+│   └── profile/
+│       ├── ProfileForm.tsx
+│       └── PasswordChangeForm.tsx
+├── pages/
+│   ├── DashboardPage.tsx
+│   ├── users/
+│   │   ├── UserListPage.tsx
+│   │   ├── CreateUserPage.tsx
+│   │   ├── UserDetailPage.tsx
+│   │   ├── EditUserPage.tsx
+│   │   └── UserPermissionsPage.tsx
+│   └── profile/
+│       ├── ProfilePage.tsx
+│       └── ChangePasswordPage.tsx
+├── hooks/
+│   ├── useDashboard.ts
+│   ├── useUsers.ts
+│   ├── useUser.ts
+│   └── usePermissions.ts
+├── types/
+│   ├── user.ts
+│   ├── dashboard.ts
+│   └── permission.ts
+└── utils/
+    └── userHelpers.ts
+================================================================================
+PHASE 4: PRODUCT CATALOG, BRANDS & CATEGORIES
+================================================================================
+OBJECTIVE:
+Implement complete product catalog management including categories (with 
+hierarchy), brands, products with variants, and product images.
+FEATURES INCLUDED:
+- Category tree view and management
+- Category CRUD operations
+- Brand list and CRUD operations
+- Product list with advanced filtering
+- Product creation with variants
+- Product editing
+- Product image upload and management
+- Variant management (size, color, etc.)
+- Product search with autocomplete
+- Bulk actions (status toggle, delete)
+- Product detail view
+- Stock level display per product
+PAGES INCLUDED:
+- /categories - Category management
+- /categories/create - Create category
+- /categories/:id/edit - Edit category
+- /brands - Brand list
+- /brands/create - Create brand
+- /brands/:id/edit - Edit brand
+- /products - Product list
+- /products/create - Create product
+- /products/:id - Product details
+- /products/:id/edit - Edit product
+- /products/:id/variants - Manage variants
+- /products/:id/images - Manage images
+COMPONENTS INCLUDED:
+- CategoryTree.tsx
+- CategoryNode.tsx
+- CategoryForm.tsx
+- BrandTable.tsx
+- BrandForm.tsx
+- ProductTable.tsx
+- ProductFilters.tsx
+- ProductForm.tsx
+- ProductVariantForm.tsx
+- VariantSelector.tsx
+- ImageUploader.tsx
+- ImageGallery.tsx
+- ProductCard.tsx
+- ProductStatusBadge.tsx
+- TypeSpecificFields.tsx (Classic vs Smart watch fields)
+- BulkActionToolbar.tsx
+- ProductQuickView.tsx
+API INTEGRATIONS REQUIRED:
+Categories:
+- GET /api/categories - List categories
+- GET /api/categories/tree - Hierarchical tree
+- POST /api/categories - Create category
+- GET /api/categories/{id} - Get category
+- PUT /api/categories/{id} - Update category
+- DELETE /api/categories/{id} - Delete category
+Brands:
+- GET /api/brands - List brands
+- POST /api/brands - Create brand
+- GET /api/brands/{id} - Get brand
+- PUT /api/brands/{id} - Update brand
+- DELETE /api/brands/{id} - Delete brand
+Products:
+- GET /api/products - List products (paginated, filterable)
+- POST /api/products - Create product
+- GET /api/products/{id} - Get product details
+- PUT /api/products/{id} - Update product
+- DELETE /api/products/{id} - Delete product
+- GET /api/products/search - Search products
+- POST /api/products/{id}/images - Upload images
+- DELETE /api/products/images/{id} - Remove image
+- GET /api/products/{id}/variants - Get variants
+- POST /api/products/{id}/variants - Create variant
+- PUT /api/products/variants/{id} - Update variant
+- DELETE /api/products/variants/{id} - Delete variant
+STATE MANAGEMENT REQUIREMENTS:
+- TanStack Query for:
+  - useCategories query
+  - useCategoryTree query
+  - useBrands query
+  - useProducts query (with filters, pagination)
+  - useProduct query
+  - useProductVariants query
+  - useCreateCategory mutation
+  - useUpdateCategory mutation
+  - useDeleteCategory mutation
+  - useCreateBrand mutation
+  - useUpdateBrand mutation
+  - useDeleteBrand mutation
+  - useCreateProduct mutation
+  - useUpdateProduct mutation
+  - useDeleteProduct mutation
+  - useUploadImage mutation
+  - useDeleteImage mutation
+  - useCreateVariant mutation
+  - useUpdateVariant mutation
+  - useDeleteVariant mutation
+- Local state for:
+  - Category tree expansion
+  - Product filters
+  - Image upload progress
+  - Variant form state
+UX REQUIREMENTS:
+- Draggable category tree (optional)
+- Instant search results with debounce
+- Image drag-and-drop upload
+- Image preview before upload
+- Progress indicator for uploads
+- Variant builder with dynamic fields
+- Type-specific fields (Classic vs Smart watch)
+- Bulk selection with actions toolbar
+- Confirmation before destructive actions
+- Empty states with create prompts
+- Quick view modal for product details
+RESPONSIVE REQUIREMENTS:
+- Category tree collapses on mobile
+- Product grid adapts columns
+- Forms stack on small screens
+- Image gallery swipeable on touch
+- Filter panel slides in on mobile
+VALIDATION REQUIREMENTS:
+- Category form:
+  - Name: required, unique per parent
+  - Parent: optional
+  - Description: optional
+- Brand form:
+  - Name: required, unique
+  - Description: optional
+  - Logo: optional image
+- Product form:
+  - Name: required
+  - SKU: required, unique
+  - Brand: required
+  - Category: required
+  - Type: required (classic/smart)
+  - Base price: required, positive number
+  - Cost price: optional, positive
+  - Type-specific fields based on selection
+- Variant form:
+  - SKU: required, unique
+  - Attributes: at least one
+  - Price adjustment: number
+  - Stock: non-negative integer
+- Image upload:
+  - File type: jpg, png, webp
+  - Max size: 5MB
+  - Max count: 10 per product
+SECURITY CONSIDERATIONS:
+- Only authorized roles can CRUD products
+- File upload validation on client and server
+- Sanitize product descriptions (XSS prevention)
+- Rate limit image uploads
+- Validate SKU uniqueness
+ACCEPTANCE CRITERIA:
+✓ Category tree displays hierarchy correctly
+✓ Categories can be created, edited, deleted
+✓ Brands list, create, edit, delete work
+✓ Product list filters and paginates
+✓ Product creation with all fields works
+✓ Variants can be added and managed
+✓ Images upload and display correctly
+✓ Images can be reordered and deleted
+✓ Search returns relevant results
+✓ Bulk actions affect selected items
+✓ Type-specific fields show/hide correctly
+✓ All forms validate properly
+✓ Success/error toasts display
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── components/
+│   ├── categories/
+│   │   ├── CategoryTree.tsx
+│   │   ├── CategoryNode.tsx
+│   │   ├── CategoryForm.tsx
+│   │   └── CategoryBreadcrumb.tsx
+│   ├── brands/
+│   │   ├── BrandTable.tsx
+│   │   ├── BrandForm.tsx
+│   │   └── BrandLogo.tsx
+│   ├── products/
+│   │   ├── ProductTable.tsx
+│   │   ├── ProductFilters.tsx
+│   │   ├── ProductForm.tsx
+│   │   ├── ProductCard.tsx
+│   │   ├── ProductStatusBadge.tsx
+│   │   ├── VariantBuilder.tsx
+│   │   ├── VariantRow.tsx
+│   │   ├── ImageUploader.tsx
+│   │   ├── ImageGallery.tsx
+│   │   ├── TypeSpecificFields.tsx
+│   │   └── BulkActionToolbar.tsx
+│   └── catalog/
+│       └── ProductQuickView.tsx
+├── pages/
+│   ├── categories/
+│   │   ├── CategoryListPage.tsx
+│   │   ├── CreateCategoryPage.tsx
+│   │   └── EditCategoryPage.tsx
+│   ├── brands/
+│   │   ├── BrandListPage.tsx
+│   │   ├── CreateBrandPage.tsx
+│   │   └── EditBrandPage.tsx
+│   └── products/
+│       ├── ProductListPage.tsx
+│       ├── CreateProductPage.tsx
+│       ├── ProductDetailPage.tsx
+│       ├── EditProductPage.tsx
+│       ├── ManageVariantsPage.tsx
+│       └── ManageImagesPage.tsx
+├── hooks/
+│   ├── useCategories.ts
+│   ├── useBrands.ts
+│   ├── useProducts.ts
+│   ├── useProduct.ts
+│   └── useProductSearch.ts
+├── types/
+│   ├── category.ts
+│   ├── brand.ts
+│   ├── product.ts
+│   └── variant.ts
+└── utils/
+    ├── productHelpers.ts
+    └── imageHelpers.ts
+================================================================================
+PHASE 5: INVENTORY, SUPPLIERS & PURCHASES
+================================================================================
+OBJECTIVE:
+Implement inventory management, supplier management, and purchase order 
+workflow from creation to receipt.
+FEATURES INCLUDED:
+- Inventory stock levels view
+- Stock adjustments with reason codes
+- Inventory movement history
+- Serial number tracking and lookup
+- Low stock alerts and notifications
+- Supplier list and CRUD
+- Supplier contact management
+- Purchase order creation
+- Purchase order workflow (draft → pending → approved → received)
+- Purchase order items management
+- Goods receiving against PO
+- Supplier purchase history
+- Barcode/QR code generation for products
+PAGES INCLUDED:
+- /inventory - Stock levels overview
+- /inventory/adjustments - Stock adjustments
+- /inventory/movements - Movement history
+- /inventory/serials - Serial number lookup
+- /suppliers - Supplier list
+- /suppliers/create - Create supplier
+- /suppliers/:id - Supplier details
+- /suppliers/:id/edit - Edit supplier
+- /suppliers/:id/contacts - Manage contacts
+- /purchase-orders - Purchase order list
+- /purchase-orders/create - Create PO
+- /purchase-orders/:id - PO details
+- /purchase-orders/:id/edit - Edit PO
+- /purchase-orders/:id/receive - Receive goods
+COMPONENTS INCLUDED:
+- InventoryTable.tsx
+- StockLevelIndicator.tsx
+- AdjustmentForm.tsx
+- MovementHistoryTable.tsx
+- SerialLookup.tsx
+- SerialNumberBadge.tsx
+- AlertsPanel.tsx
+- SupplierTable.tsx
+- SupplierForm.tsx
+- SupplierContacts.tsx
+- ContactForm.tsx
+- PurchaseOrderTable.tsx
+- PurchaseOrderFilters.tsx
+- PurchaseOrderForm.tsx
+- POItemsEditor.tsx
+- POItemRow.tsx
+- POStatusBadge.tsx
+- POWorkflow.tsx
+- ReceivingForm.tsx
+- BarcodeGenerator.tsx
+- BarcodeScanner.tsx (integration)
+API INTEGRATIONS REQUIRED:
+Inventory:
+- GET /api/inventory - Stock levels
+- GET /api/inventory/{productId} - Product stock details
+- POST /api/inventory/adjust - Adjust stock
+- GET /api/inventory/movements - Movement history
+- GET /api/inventory/serials - Serial numbers
+- GET /api/inventory/serials/{serial} - Serial lookup
+- GET /api/inventory/alerts - Low stock alerts
+Suppliers:
+- GET /api/suppliers - List suppliers
+- POST /api/suppliers - Create supplier
+- GET /api/suppliers/{id} - Get supplier
+- PUT /api/suppliers/{id} - Update supplier
+- DELETE /api/suppliers/{id} - Delete supplier
+- GET /api/suppliers/{id}/contacts - Get contacts
+- POST /api/suppliers/{id}/contacts - Add contact
+- PUT /api/suppliers/contacts/{id} - Update contact
+- DELETE /api/suppliers/contacts/{id} - Delete contact
+- GET /api/suppliers/{id}/purchases - Purchase history
+Purchase Orders:
+- GET /api/purchase-orders - List orders
+- POST /api/purchase-orders - Create order
+- GET /api/purchase-orders/{id} - Get order
+- PUT /api/purchase-orders/{id} - Update order
+- DELETE /api/purchase-orders/{id} - Cancel order
+- POST /api/purchase-orders/{id}/approve - Approve order
+- POST /api/purchase-orders/{id}/receive - Receive order
+- GET /api/purchase-orders/{id}/items - Get items
+- POST /api/purchase-orders/{id}/items - Add items
+- PUT /api/purchase-orders/items/{id} - Update item
+- DELETE /api/purchase-orders/items/{id} - Remove item
+STATE MANAGEMENT REQUIREMENTS:
+- TanStack Query for:
+  - useInventory query
+  - useStockAdjustment mutation
+  - useMovementHistory query
+  - useSerialLookup query
+  - useInventoryAlerts query
+  - useSuppliers query
+  - useSupplier query
+  - useCreateSupplier mutation
+  - useUpdateSupplier mutation
+  - useDeleteSupplier mutation
+  - useSupplierContacts query
+  - useAddContact mutation
+  - useUpdateContact mutation
+  - useDeleteContact mutation
+  - usePurchaseOrders query
+  - usePurchaseOrder query
+  - useCreatePO mutation
+  - useUpdatePO mutation
+  - useCancelPO mutation
+  - useApprovePO mutation
+  - useReceivePO mutation
+  - usePOItems query
+  - useAddPOItem mutation
+  - useUpdatePOItem mutation
+  - useDeletePOItem mutation
+- Local state for:
+  - Adjustment form
+  - PO item editor
+  - Receiving quantities
+  - Filters and sorting
+UX REQUIREMENTS:
+- Color-coded stock levels (green/yellow/red)
+- Quick adjustment modal
+- Reason code dropdown for adjustments
+- Timeline view of movements
+- Serial number search with instant results
+- Supplier cards with key info
+- Contact management inline
+- PO status workflow visualization
+- Auto-calculate PO totals
+- Product search in PO creator
+- Receiving interface with quantity inputs
+- Barcode scanner integration for receiving
+- Confirmation before status changes
+- Print PO option
+RESPONSIVE REQUIREMENTS:
+- Inventory table scrolls horizontally
+- Forms adapt to screen size
+- PO items stack on mobile
+- Receiving interface optimized for tablet
+VALIDATION REQUIREMENTS:
+- Stock adjustment:
+  - Quantity: required, integer
+  - Reason: required
+  - Notes: optional
+- Supplier form:
+  - Name: required
+  - Email: optional, valid format
+  - Phone: optional
+  - Address: optional
+- Contact form:
+  - Name: required
+  - Email/Phone: at least one
+- PO form:
+  - Supplier: required
+  - Items: at least one item
+  - Item quantity: positive integer
+  - Item price: positive number
+- Receiving form:
+  - Received quantity: <= ordered quantity
+SECURITY CONSIDERATIONS:
+- Only authorized roles can adjust inventory
+- Serial number lookups rate-limited
+- PO approval requires specific role
+- Cannot receive more than ordered
+- Audit trail for all inventory changes
+ACCEPTANCE CRITERIA:
+✓ Inventory levels display correctly
+✓ Stock adjustments update immediately
+✓ Movement history shows all transactions
+✓ Serial lookup finds matching records
+✓ Low stock alerts display prominently
+✓ Suppliers can be CRUD'd
+✓ Contacts can be managed per supplier
+✓ PO creation wizard works
+✓ PO status workflow enforced
+✓ Items can be added/removed from PO
+✓ Receiving updates inventory
+✓ Barcode scanner reads and matches products
+✓ All validations work correctly
+✓ Success/error feedback on all actions
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── components/
+│   ├── inventory/
+│   │   ├── InventoryTable.tsx
+│   │   ├── StockLevelIndicator.tsx
+│   │   ├── AdjustmentForm.tsx
+│   │   ├── AdjustmentModal.tsx
+│   │   ├── MovementHistoryTable.tsx
+│   │   ├── SerialLookup.tsx
+│   │   ├── SerialNumberBadge.tsx
+│   │   └── AlertsPanel.tsx
+│   ├── suppliers/
+│   │   ├── SupplierTable.tsx
+│   │   ├── SupplierForm.tsx
+│   │   ├── SupplierCard.tsx
+│   │   ├── SupplierContacts.tsx
+│   │   ├── ContactForm.tsx
+│   │   └── ContactCard.tsx
+│   ├── purchases/
+│   │   ├── PurchaseOrderTable.tsx
+│   │   ├── PurchaseOrderFilters.tsx
+│   │   ├── PurchaseOrderForm.tsx
+│   │   ├── POItemsEditor.tsx
+│   │   ├── POItemRow.tsx
+│   │   ├── POStatusBadge.tsx
+│   │   ├── POWorkflow.tsx
+│   │   ├── ReceivingForm.tsx
+│   │   └── ReceivingRow.tsx
+│   └── barcode/
+│       ├── BarcodeGenerator.tsx
+│       └── BarcodeScannerInput.tsx
+├── pages/
+│   ├── inventory/
+│   │   ├── InventoryPage.tsx
+│   │   ├── AdjustmentsPage.tsx
+│   │   ├── MovementsPage.tsx
+│   │   └── SerialsPage.tsx
+│   ├── suppliers/
+│   │   ├── SupplierListPage.tsx
+│   │   ├── CreateSupplierPage.tsx
+│   │   ├── SupplierDetailPage.tsx
+│   │   ├── EditSupplierPage.tsx
+│   │   └── ManageContactsPage.tsx
+│   └── purchases/
+│       ├── PurchaseOrderListPage.tsx
+│       ├── CreatePOPage.tsx
+│       ├── PODetailPage.tsx
+│       ├── EditPOPage.tsx
+│       └── ReceivePOPage.tsx
+├── hooks/
+│   ├── useInventory.ts
+│   ├── useSuppliers.ts
+│   ├── usePurchaseOrders.ts
+│   └── useBarcodeScanner.ts
+├── types/
+│   ├── inventory.ts
+│   ├── supplier.ts
+│   └── purchaseOrder.ts
+└── utils/
+    ├── inventoryHelpers.ts
+    └── barcodeHelpers.ts
+================================================================================
+PHASE 6: POS SALES SYSTEM & RECEIPT WORKFLOW
+================================================================================
+OBJECTIVE:
+Build the complete Point of Sale system for processing sales, managing the 
+cart, and generating receipts.
+FEATURES INCLUDED:
+- POS interface with product search
+- Barcode scanner integration
+- Cart management (add, update, remove items)
+- Customer selection/creation during checkout
+- Discount application (percentage/fixed)
+- Tax calculation
+- Multiple payment methods
+- Sale completion and receipt generation
+- Hold/recall cart functionality
+- Today's sales summary
+- Sales history with filtering
+- Sale detail view
+- Refund processing
+- Receipt printing
+- Receipt template management
+- Offline mode capability (basic)
+PAGES INCLUDED:
+- /pos - Main POS interface
+- /pos/cart - Cart management view
+- /pos/checkout - Checkout process
+- /sales - Sales history
+- /sales/:id - Sale details
+- /sales/:id/refund - Process refund
+- /sales/:id/receipt - Receipt view/print
+- /receipts/templates - Receipt template management
+COMPONENTS INCLUDED:
+- POSLayout.tsx
+- ProductSearch.tsx
+- ProductGrid.tsx
+- ProductScanInput.tsx
+- CartPanel.tsx
+- CartItemRow.tsx
+- CartSummary.tsx
+- HoldCartButton.tsx
+- RecallCartModal.tsx
+- CustomerSelector.tsx
+- CustomerQuickAdd.tsx
+- DiscountInput.tsx
+- TaxCalculator.tsx
+- PaymentMethodSelector.tsx
+- PaymentForm.tsx
+- CheckoutSummary.tsx
+- SaleCompleteModal.tsx
+- ReceiptPreview.tsx
+- ReceiptPrinter.tsx
+- SalesTable.tsx
+- SalesFilters.tsx
+- SaleDetail.tsx
+- RefundForm.tsx
+- TemplateEditor.tsx
+- OfflineIndicator.tsx
+API INTEGRATIONS REQUIRED:
+POS:
+- GET /api/pos/cart - Get current cart
+- POST /api/pos/cart/items - Add to cart
+- PUT /api/pos/cart/items/{id} - Update cart item
+- DELETE /api/pos/cart/items/{id} - Remove from cart
+- POST /api/pos/cart/clear - Clear cart
+- POST /api/pos/cart/hold - Hold cart
+- GET /api/pos/cart/held - Get held carts
+- POST /api/pos/cart/recall - Recall held cart
+- POST /api/pos/checkout - Process sale
+Sales:
+- GET /api/sales - Sales history (paginated, filterable)
+- GET /api/sales/{id} - Sale details
+- GET /api/sales/{id}/receipt - Receipt data
+- POST /api/sales/{id}/refund - Process refund
+- GET /api/sales/today - Today's summary
+Receipts:
+- GET /api/receipts/templates - List templates
+- POST /api/receipts/templates - Create template
+- PUT /api/receipts/templates/{id} - Update template
+- GET /api/receipts/logs - Print logs
+Customers (for POS):
+- GET /api/customers - List (for selection)
+- POST /api/customers - Quick create
+- GET /api/customers/search - Search
+Products (for POS):
+- GET /api/products/search - Search products
+- GET /api/products/{id} - Product details
+STATE MANAGEMENT REQUIREMENTS:
+- posStore (Zustand):
+  - cart: CartItem[]
+  - heldCarts: HeldCart[]
+  - selectedCustomer: Customer | null
+  - discount: number
+  - taxRate: number
+  - paymentMethod: string
+  - addToCart() action
+  - updateCartItem() action
+  - removeCartItem() action
+  - clearCart() action
+  - holdCart() action
+  - recallCart() action
+  - setCustomer() action
+  - applyDiscount() action
+  - completeSale() action
+- TanStack Query for:
+  - useProductSearch query
+  - useSales query
+  - useSale query
+  - useCheckout mutation
+  - useRefund mutation
+  - useTodaySummary query
+  - useReceiptTemplates query
+  - useCreateTemplate mutation
+  - useUpdateTemplate mutation
+- Optimistic updates for cart operations
+- LocalStorage persistence for cart (offline)
+UX REQUIREMENTS:
+- Ultra-fast product search (< 200ms)
+- Barcode scanner auto-focus and parse
+- Large, touch-friendly product cards
+- Cart updates instantly visible
+- Clear total calculation display
+- Customer quick-add modal
+- Discount input with validation
+- Payment method icons
+- Step-by-step checkout flow
+- Sale completion celebration animation
+- Receipt preview before print
+- One-click reprint last receipt
+- Hold cart with note
+- Recall cart by customer/name
+- Keyboard shortcuts (F1-F12 for common actions)
+- Number pad support for quantities
+- Sound feedback on scan (optional)
+RESPONSIVE REQUIREMENTS:
+- POS optimized for landscape tablet and desktop
+- Cart panel collapsible on smaller screens
+- Product grid adjusts columns
+- Checkout flow stacks vertically on mobile
+- Touch-optimized buttons and inputs
+VALIDATION REQUIREMENTS:
+- Cart item quantity: positive integer, <= stock
+- Discount: 0-100% or positive amount < subtotal
+- Customer phone/email: at least one for new customer
+- Payment amount: >= total due
+- Refund amount: <= original sale amount
+- Refund reason: required
+SECURITY CONSIDERATIONS:
+- Cart state validated server-side on checkout
+- Discounts limited by role permissions
+- Refunds require manager approval (configurable)
+- Receipt data tamper-proof
+- Payment amounts verified server-side
+- Session handling for concurrent POS terminals
+ACCEPTANCE CRITERIA:
+✓ Product search returns results instantly
+✓ Barcode scanner adds products to cart
+✓ Cart quantities update correctly
+✓ Cart items can be removed
+✓ Customer can be selected or created
+✓ Discounts apply correctly
+✓ Tax calculates accurately
+✓ Multiple payment methods available
+✓ Checkout completes successfully
+✓ Receipt generates with correct data
+✓ Receipt prints correctly
+✓ Sales history filters and paginates
+✓ Sale details show all information
+✓ Refund processes with validation
+✓ Held carts can be recalled
+✓ Templates can be customized
+✓ Keyboard shortcuts work
+✓ Offline mode queues transactions
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── components/
+│   ├── pos/
+│   │   ├── POSLayout.tsx
+│   │   ├── ProductSearch.tsx
+│   │   ├── ProductGrid.tsx
+│   │   ├── ProductCard.tsx
+│   │   ├── ProductScanInput.tsx
+│   │   ├── CartPanel.tsx
+│   │   ├── CartItemRow.tsx
+│   │   ├── CartSummary.tsx
+│   │   ├── HoldCartButton.tsx
+│   │   ├── RecallCartModal.tsx
+│   │   ├── CustomerSelector.tsx
+│   │   ├── CustomerQuickAdd.tsx
+│   │   ├── DiscountInput.tsx
+│   │   ├── TaxDisplay.tsx
+│   │   ├── PaymentMethodSelector.tsx
+│   │   ├── PaymentForm.tsx
+│   │   ├── CheckoutSummary.tsx
+│   │   ├── SaleCompleteModal.tsx
+│   │   └── OfflineIndicator.tsx
+│   ├── receipts/
+│   │   ├── ReceiptPreview.tsx
+│   │   ├── ReceiptPrinter.tsx
+│   │   ├── TemplateEditor.tsx
+│   │   └── TemplatePreview.tsx
+│   └── sales/
+│       ├── SalesTable.tsx
+│       ├── SalesFilters.tsx
+│       ├── SaleDetail.tsx
+│       ├── RefundForm.tsx
+│       └── RefundModal.tsx
+├── pages/
+│   ├── pos/
+│   │   ├── POSPage.tsx
+│   │   ├── CheckoutPage.tsx
+│   │   └── HeldCartsPage.tsx
+│   ├── sales/
+│   │   ├── SalesListPage.tsx
+│   │   ├── SaleDetailPage.tsx
+│   │   └── RefundPage.tsx
+│   └── receipts/
+│       └── TemplatesPage.tsx
+├── stores/
+│   └── posStore.ts
+├── hooks/
+│   ├── usePOS.ts
+│   ├── useCart.ts
+│   ├── useBarcodeScanner.ts
+│   ├── useSales.ts
+│   └── useReceipt.ts
+├── types/
+│   ├── pos.ts
+│   ├── cart.ts
+│   ├── sale.ts
+│   └── receipt.ts
+├── utils/
+│   ├── posHelpers.ts
+│   ├── receiptFormatter.ts
+│   └── keyboardShortcuts.ts
+└── config/
+    └── posConfig.ts
+================================================================================
+PHASE 7: CUSTOMERS, WARRANTY & REPORTS
+================================================================================
+OBJECTIVE:
+Implement customer management, warranty tracking, repair management, and 
+comprehensive reporting system.
+FEATURES INCLUDED:
+- Customer list with filtering
+- Customer CRUD operations
+- Customer purchase history
+- Customer notes and tags
+- Warranty lookup by serial number
+- Warranty registration
+- Warranty claim processing
+- Warranty status management
+- Warranty voiding
+- Repair job creation
+- Repair status tracking
+- SLA monitoring
+- Dashboard reports (KPIs)
+- Sales reports (daily, monthly, custom range)
+- Product performance reports
+- Inventory valuation reports
+- Financial summaries
+- Employee performance reports
+- Report export (CSV, PDF)
+- Report scheduling (optional)
+PAGES INCLUDED:
+- /customers - Customer list
+- /customers/create - Create customer
+- /customers/:id - Customer details
+- /customers/:id/edit - Edit customer
+- /customers/:id/purchases - Purchase history
+- /warranties - Warranty list
+- /warranties/lookup - Serial lookup
+- /warranties/claim - Register claim
+- /warranties/:id - Warranty details
+- /repairs - Repair list
+- /repairs/create - Create repair job
+- /repairs/:id - Repair details
+- /reports - Reports dashboard
+- /reports/sales - Sales reports
+- /reports/products - Product reports
+- /reports/inventory - Inventory reports
+- /reports/financial - Financial reports
+- /reports/employees - Employee reports
+COMPONENTS INCLUDED:
+- CustomerTable.tsx
+- CustomerFilters.tsx
+- CustomerForm.tsx
+- CustomerCard.tsx
+- CustomerTags.tsx
+- PurchaseHistoryTable.tsx
+- WarrantyLookup.tsx
+- WarrantyTable.tsx
+- WarrantyStatusBadge.tsx
+- WarrantyClaimForm.tsx
+- WarrantyTimeline.tsx
+- RepairTable.tsx
+- RepairForm.tsx
+- RepairStatusBadge.tsx
+- RepairTimeline.tsx
+- SLAIndicator.tsx
+- ReportDashboard.tsx
+- ReportFilters.tsx
+- SalesReport.tsx
+- ProductReport.tsx
+- InventoryReport.tsx
+- FinancialReport.tsx
+- EmployeeReport.tsx
+- ReportExport.tsx
+- ChartContainer.tsx
+- DataGrid.tsx
+API INTEGRATIONS REQUIRED:
+Customers:
+- GET /api/customers - List customers
+- POST /api/customers - Create customer
+- GET /api/customers/{id} - Get customer
+- PUT /api/customers/{id} - Update customer
+- DELETE /api/customers/{id} - Delete customer
+- GET /api/customers/{id}/purchases - Purchase history
+- GET /api/customers/search - Search customers
+Warranties:
+- GET /api/warranties - List warranties
+- GET /api/warranties/{serial} - Lookup by serial
+- POST /api/warranties - Register warranty
+- POST /api/warranties/claim - Register claim
+- PUT /api/warranties/{id} - Update claim
+- POST /api/warranties/{id}/void - Void warranty
+- GET /api/warranties/expiring - Expiring soon
+Repairs:
+- GET /api/repairs - List repairs
+- POST /api/repairs - Create repair job
+- GET /api/repairs/{id} - Repair details
+- PUT /api/repairs/{id} - Update repair
+- POST /api/repairs/{id}/status - Update status
+- POST /api/repairs/{id}/complete - Complete repair
+Reports:
+- GET /api/reports/dashboard - Dashboard KPIs
+- GET /api/reports/sales - Sales report
+- GET /api/reports/sales/daily - Daily sales
+- GET /api/reports/sales/monthly - Monthly sales
+- GET /api/reports/products - Product performance
+- GET /api/reports/inventory - Inventory report
+- GET /api/reports/financial - Financial summary
+- GET /api/reports/employees - Employee performance
+- GET /api/reports/export - Export data
+STATE MANAGEMENT REQUIREMENTS:
+- TanStack Query for:
+  - useCustomers query
+  - useCustomer query
+  - useCreateCustomer mutation
+  - useUpdateCustomer mutation
+  - useDeleteCustomer mutation
+  - useCustomerPurchases query
+  - useWarrantyLookup query
+  - useWarranties query
+  - useRegisterWarranty mutation
+  - useRegisterClaim mutation
+  - useUpdateWarranty mutation
+  - useVoidWarranty mutation
+  - useExpiringWarranties query
+  - useRepairs query
+  - useRepair query
+  - useCreateRepair mutation
+  - useUpdateRepair mutation
+  - useUpdateRepairStatus mutation
+  - useCompleteRepair mutation
+  - useDashboardReport query
+  - useSalesReport query
+  - useProductReport query
+  - useInventoryReport query
+  - useFinancialReport query
+  - useEmployeeReport query
+- Local state for:
+  - Report filters
+  - Date range pickers
+  - Export options
+UX REQUIREMENTS:
+- Customer search with autocomplete
+- Customer tags for segmentation
+- Purchase history timeline
+- Warranty lookup instant results
+- Warranty status color coding
+- Claim form with photo upload (optional)
+- Repair job status workflow
+- SLA countdown timers
+- Report filters with presets
+- Interactive charts with tooltips
+- Data tables with export
+- Date range picker with presets
+- Report comparison view
+- Scheduled report email (optional)
+- Print-friendly report layouts
+RESPONSIVE REQUIREMENTS:
+- Customer list adapts to screen
+- Forms stack on mobile
+- Reports scroll horizontally
+- Charts resize responsively
+- Tables become card view on mobile
+VALIDATION REQUIREMENTS:
+- Customer form:
+  - Name: required
+  - Phone/Email: at least one required
+  - Address: optional
+- Warranty claim:
+  - Serial: required
+  - Issue description: required
+  - Photos: optional
+- Repair form:
+  - Customer: required
+  - Product: required
+  - Issue: required
+  - Expected completion: date
+- Report filters:
+  - Date range: valid range, end >= start
+SECURITY CONSIDERATIONS:
+- Customer data privacy compliance
+- Only authorized roles see financial reports
+- Employee reports visible to managers only
+- Warranty voiding requires reason and authorization
+- Export limits based on role
+- Audit log for report access
+ACCEPTANCE CRITERIA:
+✓ Customer list filters and searches
+✓ Customer CRUD operations work
+✓ Purchase history displays correctly
+✓ Warranty lookup by serial works
+✓ Warranty claims can be registered
+✓ Warranty status updates correctly
+✓ Repair jobs can be created
+✓ Repair status workflow works
+✓ SLA indicators show correctly
+✓ Dashboard reports load with data
+✓ All report types generate correctly
+✓ Charts render with accurate data
+✓ Export produces valid files
+✓ Date range filters work
+✓ All validations function properly
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── components/
+│   ├── customers/
+│   │   ├── CustomerTable.tsx
+│   │   ├── CustomerFilters.tsx
+│   │   ├── CustomerForm.tsx
+│   │   ├── CustomerCard.tsx
+│   │   ├── CustomerTags.tsx
+│   │   └── PurchaseHistoryTable.tsx
+│   ├── warranties/
+│   │   ├── WarrantyLookup.tsx
+│   │   ├── WarrantyTable.tsx
+│   │   ├── WarrantyStatusBadge.tsx
+│   │   ├── WarrantyClaimForm.tsx
+│   │   ├── WarrantyTimeline.tsx
+│   │   └── ExpiringWarranties.tsx
+│   ├── repairs/
+│   │   ├── RepairTable.tsx
+│   │   ├── RepairForm.tsx
+│   │   ├── RepairStatusBadge.tsx
+│   │   ├── RepairTimeline.tsx
+│   │   └── SLAIndicator.tsx
+│   └── reports/
+│       ├── ReportDashboard.tsx
+│       ├── ReportFilters.tsx
+│       ├── ReportExport.tsx
+│       ├── ChartContainer.tsx
+│       ├── DataGrid.tsx
+│       ├── SalesReport.tsx
+│       ├── ProductReport.tsx
+│       ├── InventoryReport.tsx
+│       ├── FinancialReport.tsx
+│       └── EmployeeReport.tsx
+├── pages/
+│   ├── customers/
+│   │   ├── CustomerListPage.tsx
+│   │   ├── CreateCustomerPage.tsx
+│   │   ├── CustomerDetailPage.tsx
+│   │   └── EditCustomerPage.tsx
+│   ├── warranties/
+│   │   ├── WarrantyListPage.tsx
+│   │   ├── WarrantyLookupPage.tsx
+│   │   ├── RegisterClaimPage.tsx
+│   │   └── WarrantyDetailPage.tsx
+│   ├── repairs/
+│   │   ├── RepairListPage.tsx
+│   │   ├── CreateRepairPage.tsx
+│   │   └── RepairDetailPage.tsx
+│   └── reports/
+│       ├── ReportsDashboardPage.tsx
+│       ├── SalesReportPage.tsx
+│       ├── ProductReportPage.tsx
+│       ├── InventoryReportPage.tsx
+│       ├── FinancialReportPage.tsx
+│       └── EmployeeReportPage.tsx
+├── hooks/
+│   ├── useCustomers.ts
+│   ├── useWarranties.ts
+│   ├── useRepairs.ts
+│   └── useReports.ts
+├── types/
+│   ├── customer.ts
+│   ├── warranty.ts
+│   ├── repair.ts
+│   └── reports.ts
+└── utils/
+    ├── reportFormatters.ts
+    └── chartConfigs.ts
+================================================================================
+PHASE 8: SETTINGS, PRINTING INTEGRATION, OPTIMIZATION & PRODUCTION READINESS
+================================================================================
+OBJECTIVE:
+Complete the application with settings management, printing integration, 
+performance optimization, and production deployment preparation.
+FEATURES INCLUDED:
+- Settings management (grouped by category)
+- Shop/profile settings
+- Tax configuration
+- Receipt template customization
+- Printer configuration
+- Barcode printer settings
+- User preferences
+- System configuration
+- Print service integration
+- Thermal printer support
+- PDF generation
+- Label printing
+- Performance optimization
+- Code splitting
+- Lazy loading
+- Image optimization
+- Bundle analysis
+- Error tracking setup
+- Logging configuration
+- Production build optimization
+- Deployment scripts
+- Documentation
+- Testing suite completion
+PAGES INCLUDED:
+- /settings - Settings overview
+- /settings/shop - Shop settings
+- /settings/tax - Tax configuration
+- /settings/receipts - Receipt settings
+- /settings/printers - Printer configuration
+- /settings/barcodes - Barcode settings
+- /settings/preferences - User preferences
+- /settings/system - System settings
+COMPONENTS INCLUDED:
+- SettingsLayout.tsx
+- SettingsNavigation.tsx
+- SettingsGroup.tsx
+- ShopSettingsForm.tsx
+- TaxSettingsForm.tsx
+- ReceiptSettingsForm.tsx
+- PrinterConfigForm.tsx
+- BarcodeSettingsForm.tsx
+- PreferencesForm.tsx
+- SystemSettingsForm.tsx
+- PrintService.tsx
+- ThermalPrinterDriver.tsx
+- PDFTemplate.tsx
+- LabelTemplate.tsx
+- PerformanceMonitor.tsx
+- ErrorTracker.tsx
+- CacheManager.tsx
+- UpdateNotifier.tsx
+API INTEGRATIONS REQUIRED:
+Settings:
+- GET /api/settings - Get all settings
+- PUT /api/settings - Update settings
+- GET /api/settings/{group} - Get group settings
+- PUT /api/settings/{group} - Update group
+- GET /api/settings/groups - List groups
+Printing:
+- GET /api/receipts/templates - Receipt templates
+- POST /api/receipts/templates - Create template
+- PUT /api/receipts/templates/{id} - Update template
+- POST /api/print/receipt - Print receipt
+- POST /api/print/label - Print label
+- GET /api/print/status - Printer status
+Optimization:
+- Various endpoints for cache management
+- Log endpoints (if applicable)
+STATE MANAGEMENT REQUIREMENTS:
+- settingsStore (Zustand):
+  - shopSettings: object
+  - taxSettings: object
+  - receiptSettings: object
+  - printerSettings: object
+  - userPreferences: object
+  - loadSettings() action
+  - updateSettings() action
+  - resetSettings() action
+- TanStack Query for:
+  - useSettings query
+  - useSettingsGroup query
+  - useUpdateSettings mutation
+  - useReceiptTemplates query
+  - usePrintReceipt mutation
+  - usePrintLabel mutation
+- Cache invalidation strategies
+- Background sync for settings
+UX REQUIREMENTS:
+- Settings grouped logically
+- Search within settings
+- Reset to default options
+- Preview for receipt templates
+- Test print functionality
+- Printer connection status
+- Real-time validation
+- Save confirmation
+- Unsaved changes warning
+- Import/export settings
+- Dark mode toggle
+- Language selector (if multi-lang)
+- Keyboard shortcut configuration
+- Help tooltips on complex settings
+RESPONSIVE REQUIREMENTS:
+- Settings panels adapt to screen
+- Forms stack on mobile
+- Preview scales appropriately
+- Printer config optimized for tablet
+VALIDATION REQUIREMENTS:
+- Shop settings:
+  - Name: required
+  - Address: optional
+  - Phone/Email: at least one
+- Tax settings:
+  - Rate: 0-100
+  - Type: required
+- Receipt settings:
+  - Header/Footer: max length
+  - Logo: image file, size limit
+- Printer settings:
+  - IP/Port: valid format
+  - Driver: required selection
+SECURITY CONSIDERATIONS:
+- Only ADMIN can modify system settings
+- Settings changes logged
+- Printer access controlled
+- Sensitive settings masked
+- API rate limiting on settings updates
+- Secure print queue handling
+PERFORMANCE OPTIMIZATIONS:
+- Code splitting by route
+- Lazy load heavy components
+- Image lazy loading
+- Virtual scrolling for large lists
+- Memoization of expensive calculations
+- Debounced search inputs
+- Optimistic UI updates
+- Service worker for caching
+- CDN for static assets
+- Gzip/Brotli compression
+- HTTP/2 multiplexing
+PRODUCTION READINESS:
+- Environment-specific configs
+- Error tracking (Sentry/logrocket)
+- Analytics integration
+- SEO meta tags (if applicable)
+- PWA configuration (optional)
+- Accessibility audit
+- Performance budget
+- Bundle size limits
+- Security headers
+- CORS configuration
+- Rate limiting awareness
+- Backup procedures
+- Rollback plan
+- Monitoring setup
+- Alert configuration
+ACCEPTANCE CRITERIA:
+✓ All settings groups accessible
+✓ Settings can be viewed and updated
+✓ Changes persist correctly
+✓ Receipt templates customizable
+✓ Preview shows accurate representation
+✓ Test print succeeds
+✓ Thermal printer integrates
+✓ Labels print correctly
+✓ PDF generation works
+✓ Code splitting implemented
+✓ Lazy loading functional
+✓ Bundle size within budget
+✓ Performance metrics meet targets
+✓ Error tracking configured
+✓ Documentation complete
+✓ Tests passing
+✓ Production build successful
+✓ Deployment scripts working
+RECOMMENDED FOLDER STRUCTURE:
+src/
+├── components/
+│   ├── settings/
+│   │   ├── SettingsLayout.tsx
+│   │   ├── SettingsNavigation.tsx
+│   │   ├── SettingsGroup.tsx
+│   │   ├── ShopSettingsForm.tsx
+│   │   ├── TaxSettingsForm.tsx
+│   │   ├── ReceiptSettingsForm.tsx
+│   │   ├── PrinterConfigForm.tsx
+│   │   ├── BarcodeSettingsForm.tsx
+│   │   ├── PreferencesForm.tsx
+│   │   └── SystemSettingsForm.tsx
+│   ├── printing/
+│   │   ├── PrintService.tsx
+│   │   ├── ThermalPrinterDriver.tsx
+│   │   ├── PDFTemplate.tsx
+│   │   ├── LabelTemplate.tsx
+│   │   └── PrintQueue.tsx
+│   └── optimization/
+│       ├── PerformanceMonitor.tsx
+│       ├── ErrorTracker.tsx
+│       ├── CacheManager.tsx
+│       └── UpdateNotifier.tsx
+├── pages/
+│   └── settings/
+│       ├── SettingsOverviewPage.tsx
+│       ├── ShopSettingsPage.tsx
+│       ├── TaxSettingsPage.tsx
+│       ├── ReceiptSettingsPage.tsx
+│       ├── PrinterSettingsPage.tsx
+│       ├── BarcodeSettingsPage.tsx
+│       ├── PreferencesPage.tsx
+│       └── SystemSettingsPage.tsx
+├── stores/
+│   └── settingsStore.ts
+├── hooks/
+│   ├── useSettings.ts
+│   ├── usePrinter.ts
+│   └── usePerformance.ts
+├── services/
+│   ├── printService.ts
+│   ├── pdfService.ts
+│   └── cacheService.ts
+├── types/
+│   ├── settings.ts
+│   └── printing.ts
+├── utils/
+│   ├── settingsHelpers.ts
+│   ├── printHelpers.ts
+│   └── optimizationHelpers.ts
+├── config/
+│   ├── production.ts
+│   └── features.ts
+└── docs/
+    ├── DEPLOYMENT.md
+    ├── CONFIGURATION.md
+    └── TROUBLESHOOTING.md
+================================================================================
+GENERAL IMPLEMENTATION GUIDELINES
+================================================================================
+CODING STANDARDS:
+- Use TypeScript strict mode
+- Follow ESLint + Prettier configuration
+- Component naming: PascalCase
+- File naming: kebab-case for files, PascalCase for components
+- Use functional components with hooks
+- Avoid class components
+- Use custom hooks for reusable logic
+- Keep components small and focused
+- Maximum component length: 300 lines
+- Maximum function length: 50 lines
+ERROR HANDLING:
+- Global error boundary for unexpected errors
+- Try-catch around async operations
+- User-friendly error messages
+- Technical details in console/dev mode
+- Error logging service integration
+- Retry logic for failed requests
+- Fallback UI for failed components
+LOADING STRATEGIES:
+- Skeleton screens for page loads
+- Inline spinners for actions
+- Progressive loading for heavy data
+- Lazy loading for below-fold content
+- Prefetching for likely next pages
+- Optimistic updates for mutations
+CACHING STRATEGY:
+- TanStack Query default: 5 min stale time
+- Critical  1 min stale time
+- Static  infinite cache
+- Manual invalidation on mutations
+- Background refetch on window focus
+- Pagination cache by page
+ACCESSIBILITY:
+- WCAG 2.1 AA compliance target
+- Semantic HTML elements
+- ARIA labels where needed
+- Keyboard navigation support
+- Focus management
+- Color contrast compliance
+- Screen reader testing
+TESTING:
+- Unit tests for utilities and hooks
+- Component tests with React Testing Library
+- Integration tests for critical flows
+- E2E tests with Playwright/Cypress
+- Minimum 80% code coverage
+- Visual regression tests (optional)
+DOCUMENTATION:
+- README with setup instructions
+- Component documentation with Storybook
+- API integration guide
+- Deployment guide
+- Troubleshooting guide
+- Changelog maintenance
+DEPLOYMENT:
+- Docker containerization
+- CI/CD pipeline configuration
+- Environment variable management
+- Build optimization
+- Asset compression
+- CDN configuration
+- SSL/TLS enforcement
+- Health check endpoints
+================================================================================
+END OF REQUIREMENTS DOCUMENT
+================================================================================

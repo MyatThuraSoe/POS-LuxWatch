@@ -1,0 +1,6 @@
+:root {
+  --luxwatch-header-height: 4rem;
+  --luxwatch-sidebar-width: 17rem;
+  --luxwatch-radius: 0.5rem;
+  --luxwatch-transition: 200ms ease-in-out;
+}
